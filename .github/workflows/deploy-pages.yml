@@ -1,0 +1,71 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Allow the workflow to publish to Pages, but nothing more.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two deploys at once; let an in-flight one finish so a partially
+# uploaded site is never published.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build web bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build web
+        # The base href must match the Pages subpath (https://<user>.github.io/<repo>/),
+        # otherwise every asset request 404s.
+        run: |
+          flutter build web \
+            --release \
+            --base-href "/${GITHUB_REPOSITORY#*/}/" \
+            --no-web-resources-cdn
+
+      - name: Add SPA and Jekyll fallbacks
+        run: |
+          # GitHub Pages serves 404.html for unknown paths; pointing it at the
+          # app keeps deep links working.
+          cp build/web/index.html build/web/404.html
+          # Without this, Pages' Jekyll step strips files and folders that start
+          # with an underscore.
+          touch build/web/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
