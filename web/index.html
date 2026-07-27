@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--
+    Replaced at build time by the `--base-href` argument. GitHub Pages serves the
+    app from a project subpath, so this must not be hard-coded to "/".
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Compose photos for print, and other photo and PDF tools that run entirely in your browser. Your files are never uploaded.">
+  <meta name="theme-color" content="#0E9F8E">
+  <meta name="color-scheme" content="light dark">
+
+  <meta property="og:title" content="Mellisuga — photo and PDF tools that run in your browser">
+  <meta property="og:description" content="Pack photos of any size onto Letter, A4 or A3 with no wasted paper. Everything runs on your device; nothing is uploaded.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+
+  <!-- iOS home-screen install -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mellisuga">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Mellisuga — photo and PDF tools that run in your browser</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background-color: #FAFDFC;
+      /* Match the app's own font so the splash text does not reflow on load. */
+      font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html, body { background-color: #101413; }
+    }
+
+    /*
+      Shown until Flutter paints its first frame. The engine removes the whole
+      element once the app is running, so nothing here can linger behind the UI.
+    */
+    #boot {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      color: #4A5B58;
+      transition: opacity 240ms ease-out;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      #boot { color: #9BB0AC; }
+    }
+
+    #boot img {
+      width: 84px;
+      height: 84px;
+      border-radius: 22px;
+      animation: hover 2.2s ease-in-out infinite;
+    }
+
+    #boot p {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0.2px;
+    }
+
+    @keyframes hover {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-7px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #boot img { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="boot">
+    <img src="icons/Icon-192.png" alt="">
+    <p>Loading Mellisuga…</p>
+    <noscript>
+      <p>Mellisuga needs JavaScript, because every tool runs on your own device
+      rather than on a server.</p>
+    </noscript>
+  </div>
+
+  <script>
+    // Fade the splash out as soon as Flutter reports its first frame.
+    window.addEventListener('flutter-first-frame', function () {
+      var boot = document.getElementById('boot');
+      if (!boot) return;
+      boot.style.opacity = '0';
+      setTimeout(function () { boot.remove(); }, 260);
+    });
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

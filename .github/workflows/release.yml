@@ -1,0 +1,116 @@
+name: Release
+
+# Builds native packages for every desktop and mobile target and attaches them
+# to a GitHub release. Web is handled separately by the Pages workflow.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: android
+            os: ubuntu-latest
+          - target: linux
+            os: ubuntu-latest
+          - target: windows
+            os: windows-latest
+          - target: macos
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        if: matrix.target == 'android'
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Linux build dependencies
+        if: matrix.target == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Build Android
+        if: matrix.target == 'android'
+        # Split per ABI so users do not download three architectures they will
+        # never run.
+        run: flutter build apk --release --split-per-abi
+
+      - name: Build Linux
+        if: matrix.target == 'linux'
+        run: flutter build linux --release
+
+      - name: Build Windows
+        if: matrix.target == 'windows'
+        run: flutter build windows --release
+
+      - name: Build macOS
+        if: matrix.target == 'macos'
+        run: flutter build macos --release
+
+      - name: Package Linux
+        if: matrix.target == 'linux'
+        run: |
+          cd build/linux/x64/release
+          tar czf "$GITHUB_WORKSPACE/mellisuga-linux-x64.tar.gz" bundle
+
+      - name: Package Windows
+        if: matrix.target == 'windows'
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath mellisuga-windows-x64.zip
+
+      - name: Package macOS
+        if: matrix.target == 'macos'
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -ry "$GITHUB_WORKSPACE/mellisuga-macos.zip" Mellisuga.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mellisuga-${{ matrix.target }}
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            mellisuga-linux-x64.tar.gz
+            mellisuga-windows-x64.zip
+            mellisuga-macos.zip
+          if-no-files-found: ignore
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
+          body: |
+            Native builds of Mellisuga. The web version is always available at
+            the project's GitHub Pages URL.
+
+            These binaries are unsigned. macOS and Windows will warn on first
+            launch; open them via right-click → Open (macOS) or "More info" →
+            "Run anyway" (Windows).
