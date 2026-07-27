@@ -2,5 +2,7 @@
 /// exactly the presets the picker offers.
 ///
 /// The re-export keeps every existing import inside the app working.
+library;
+
 export 'package:mellisuga_content/mellisuga_content.dart'
     show PhotoPrintSize, PhotoSizePreset, PhotoSizePresets;
