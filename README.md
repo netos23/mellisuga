@@ -1,171 +1,109 @@
 # Mellisuga
 
-**Photo and PDF tools that run in your browser.** No uploads, no accounts, no server.
+**Photo and PDF tools that run in your browser.** No uploads, no accounts, no
+server.
 
-Mellisuga is a Flutter application that ships to the web, to desktop and to
-mobile from a single codebase. Every tool does its work on your own device: the
-web build is a static site, so there is no backend that *could* receive your
-files.
+This repository holds two products and the content they share:
+
+| Path | What it is |
+| --- | --- |
+| [`apps/mellisuga`](apps/mellisuga) | The Flutter app — web, Android, Windows, macOS, Linux |
+| [`apps/jasper`](apps/jasper) | Jasper, the static site generator that builds the landing page |
+| [`packages/mellisuga_content`](packages/mellisuga_content) | The facts both of them state: tools, legal text, formats, brand |
 
 Named after *Mellisuga helenae*, the bee hummingbird — the smallest bird there
 is, and a fitting mascot for tools that fit a lot into very little space.
 
 ---
 
-## Tools
+## One site, two builds
 
-### Compose photos for print — available
+Both are published by a single workflow, to a single GitHub Pages site:
 
-Pack photos of any size onto a sheet with as little waste as possible.
+```
+https://<owner>.github.io/<repo>/          the landing site   (apps/jasper)
+https://<owner>.github.io/<repo>/app/      the application    (apps/mellisuga)
+```
 
-- **Any paper size.** A2–A6, Letter, Legal, Tabloid, Executive, B4/B5 and common
-  photo paper sizes, in portrait or landscape.
-- **A print size per photo.** Passport (35 × 45 mm), US visa, wallet, 10 × 15 cm,
-  4 × 6 in and more — or type exact dimensions in mm, cm or inches.
-- **Automatic bin packing.** A MaxRects packer fills each sheet, turning photos
-  90° where that saves paper, and starts a new page only when the current one is
-  genuinely full. Small photos backfill the gaps left around large ones.
-- **Per-photo editing.** Crop with an aspect lock, rotate in quarter turns, flip,
-  and draw freehand annotations. All edits are non-destructive.
-- **Cutting guides.** Outlines, full-sheet cut lines or corner crop marks, in
-  solid, dashed or dotted, with configurable thickness and colour.
-- **Margins and spacing** in your preferred unit, uniform or per-edge.
-- **Export** to PDF or PNG/JPEG at 150–600 DPI, or send straight to a printer.
-- **Resolution warnings** when a photo would print below 150 DPI.
+The landing site is static HTML with no JavaScript requirement, so it is what
+search engines and link previews see. The app is the Flutter build, published
+underneath it.
 
-### On the roadmap
+**The app links to the landing site; it never contains it.** Nothing Jasper
+produces is a Flutter asset, and no native build bundles a page — the About
+screen has a *Website* link and that is the whole relationship. In the other
+direction the landing page only ever writes an anchor to `/app/`.
 
-Images → PDF · Merge PDFs · Split PDF · PDF → images · Resize & convert images ·
-Rotate & reorder pages · Watermark
+## The shared package
 
-Each appears in the app with a page describing what it will do. Adding a tool is
-a one-file change — see [Adding a tool](#adding-a-tool).
+`mellisuga_content` is pure Dart — no Flutter — because Jasper is a plain Dart
+program and could not import it otherwise. It holds:
 
----
+- **the tool catalogue**: title, summary, highlights, keywords and body copy for
+  every tool, plus whether it is built yet;
+- **the legal documents**: privacy policy, terms and licences, as structured
+  text;
+- **the physical formats**: paper sizes and print size presets, in millimetres;
+- **the brand**: name, tagline, URLs, palette, and the hummingbird's geometry as
+  SVG path data.
 
-## Running it
+The app renders that with widgets; the site renders it as HTML. Neither owns it,
+so the privacy policy on the website and the privacy policy in the app cannot
+say different things, and a tool added to the catalogue appears in both.
+
+## Working on it
 
 ```bash
+# The app
+cd apps/mellisuga
 flutter pub get
-
-# Web
 flutter run -d chrome
+flutter test && flutter analyze --fatal-infos
 
-# Desktop
-flutter run -d linux    # or macos, windows
+# The landing site
+cd apps/jasper
+dart pub get
+dart run bin/build.dart --out build/preview --base-href / --site-url http://localhost:8080/
+dart run bin/serve.dart build/preview      # http://localhost:8080
+dart test
 
-# Mobile
-flutter run -d android  # or ios
+# The shared content
+cd packages/mellisuga_content
+dart pub get && dart test
 ```
 
-Requires Flutter 3.44 or newer (Dart 3.12).
+Formatting is `dart format --line-length 100` everywhere, and CI checks it.
 
-### Building
+Each package resolves its own dependencies with a plain path dependency — there
+is no workspace file to keep in step, and `flutter pub get` in the app is enough
+to pick up a change in `mellisuga_content`.
 
-```bash
-# Web. --no-web-resources-cdn bundles CanvasKit locally so the app makes no
-# third-party requests at runtime, which is what the privacy policy promises.
-flutter build web --release --no-web-resources-cdn
+## Continuous integration
 
-flutter build apk --release --split-per-abi
-flutter build linux --release
-flutter build macos --release
-flutter build windows --release
-```
+| Workflow | Trigger | What it does |
+| --- | --- | --- |
+| [`ci.yml`](.github/workflows/ci.yml) | any branch but `main`, and PRs | Formats, analyses and tests all three packages; builds the landing site and the web app |
+| [`deploy-pages.yml`](.github/workflows/deploy-pages.yml) | push to `main` | Tests everything, builds the landing site into the Pages root and the app into `/app/`, publishes once |
+| [`release.yml`](.github/workflows/release.yml) | `v*` tags | Builds and attaches unsigned Android, Linux, macOS and Windows packages |
 
-### Tests
-
-```bash
-flutter test
-flutter analyze --fatal-infos
-dart format --line-length 100 lib test
-```
-
----
-
-## How it works
-
-```
-lib/
-├── core/
-│   ├── units/          Millimetre-based length model, paper formats, DPI maths
-│   ├── tools/          Tool registry — the extension point for new utilities
-│   ├── io/             Cross-platform file saving (web / desktop / mobile)
-│   ├── theme/          Colour and type system
-│   └── widgets/        Logo, responsive helpers
-└── features/
-    ├── shell/          App frame: navigation, theme, branding
-    ├── home/           Tool gallery
-    ├── legal/          Privacy policy, terms, licences, about
-    ├── tool_placeholder/  Roadmap page for unbuilt tools
-    └── photo_compose/
-        ├── models/     Photo items, edits, layout settings, layout results
-        ├── logic/      Packer, layout engine, image processing, importing
-        ├── state/      ComposeController (ChangeNotifier) + scope
-        ├── ui/         Page, panels, editor, painters
-        └── export/     PDF and raster exporters
-```
-
-### Design decisions worth knowing
-
-**Everything physical is in millimetres.** `double` millimetres are the single
-source of truth; pixels and PDF points are derived at the edges. That is why an
-A4 sheet exported at 300 DPI comes out at exactly 2480 × 3508 px.
-
-**The preview never re-encodes.** On-screen photos are drawn straight onto
-Flutter's canvas with transforms that reproduce the edit stack, so dragging a
-crop handle costs nothing. The `image` package is only used at export time,
-where real pixels are required. Both paths apply crop → annotations → flips →
-rotation in exactly that order, so what you see is what prints.
-
-**EXIF orientation is baked in at import.** Phone cameras store rotation as
-metadata, and platform codecs disagree about whether to honour it. Importing
-through the `image` package removes the ambiguity — at the cost of one decode
-per photo, which is worth it when the output is going on paper.
-
-**Layout runs synchronously.** Packing a few hundred rectangles takes well under
-a millisecond, so the preview can never lag behind the controls.
-
-**Guide geometry is computed once.** The preview, the PDF exporter and the
-raster exporter all read the same millimetre-space segments, so the cut lines
-you print are the cut lines you saw.
-
-### Adding a tool
-
-1. Build the screen as a widget under `lib/features/<your_tool>/`.
-2. Add a `ToolDefinition` to `lib/core/tools/tool_registry.dart`.
-
-The home gallery, navigation rail, drawer, search and routing all read from the
-registry, so nothing else needs touching.
-
----
-
-## Deployment
-
-Pushing to `main` triggers `.github/workflows/deploy-pages.yml`, which tests,
-builds and publishes the web app to GitHub Pages. Enable it once under
-**Settings → Pages → Source → GitHub Actions**.
-
-Tagging a release (`v1.2.3`) triggers `.github/workflows/release.yml`, which
-builds Android APKs plus Linux, macOS and Windows packages and attaches them to
-a GitHub release. Those binaries are unsigned.
-
----
+Enable Pages once under **Settings → Pages → Source → GitHub Actions**.
 
 ## Privacy
 
-Mellisuga collects nothing. No analytics, no telemetry, no cookies, no accounts.
-Files you open are held in memory and discarded when you close the tab. After the
-page loads, the app makes no network requests at all — CanvasKit and the typeface
-are bundled rather than fetched from a CDN.
+Mellisuga collects nothing. No analytics, no telemetry, no cookies, no accounts —
+on the website as well as in the app. Files you open are held in memory and
+discarded when you close the tab. After the page loads, neither the site nor the
+app makes any network request at all: CanvasKit, the typeface, the stylesheet and
+every illustration are served from the same origin as the page, and Jasper's test
+suite fails the build if that ever stops being true.
 
 See [PRIVACY.md](PRIVACY.md) and [TERMS.md](TERMS.md); both are also readable
-inside the app.
+inside the app and on the website.
 
 ## Licence
 
 [MIT](LICENSE) © 2026 Nikita Morozov.
 
 Bundled third-party components and their licences are listed in
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and on the app's
-**About → Open source licences** page.
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), on the website's **Open source
+licences** page, and on the app's **About → Open source licences** screen.

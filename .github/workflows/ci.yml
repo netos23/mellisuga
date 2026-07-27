@@ -12,9 +12,68 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  analyze-and-test:
-    name: Analyze & test
+  # The two pure-Dart packages need no Flutter SDK, so they get their own fast
+  # job rather than waiting behind an app build.
+  dart:
+    name: Shared content & landing generator
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [packages/mellisuga_content, apps/jasper]
+    defaults:
+      run:
+        working-directory: ${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - run: dart pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed --line-length 100 .
+
+      - name: Analyze
+        run: dart analyze --fatal-infos
+
+      - name: Run tests
+        run: dart test --reporter expanded
+
+  landing:
+    name: Build the landing site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Build at the subpath it is deployed to
+        working-directory: apps/jasper
+        run: |
+          dart pub get
+          dart run bin/build.dart \
+            --out build/site \
+            --base-href "/${GITHUB_REPOSITORY#*/}/" \
+            --site-url "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/"
+
+      - name: Upload the built site for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: landing-site
+          path: apps/jasper/build/site
+          retention-days: 7
+
+  app:
+    name: Analyze & test the app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mellisuga
     steps:
       - uses: actions/checkout@v4
 

@@ -1,0 +1,18 @@
+name: mellisuga_content
+description: >-
+  Product copy, legal documents, tool catalogue and brand geometry shared by the
+  Mellisuga app and the Jasper landing site.
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.12.0
+
+# Deliberately Flutter-free: the landing generator is a plain Dart program, so
+# anything shared with it has to compile without the Flutter SDK.
+dependencies:
+  meta: ^1.15.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

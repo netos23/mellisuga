@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build web bundle
+    name: Build site
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,35 +29,74 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Install dependencies
+      # One deployment, two artifacts: the landing site at the root and the
+      # Flutter app underneath it at /app/. They are built separately and only
+      # meet in the upload directory — the app never contains the landing page,
+      # and the landing page only ever links to the app.
+      - name: Work out where the site will live
+        id: urls
+        run: |
+          repo="${GITHUB_REPOSITORY#*/}"
+          {
+            echo "base_href=/$repo/"
+            echo "site_url=https://${GITHUB_REPOSITORY_OWNER}.github.io/$repo/"
+            echo "app_base_href=/$repo/app/"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Install app dependencies
+        working-directory: apps/mellisuga
         run: flutter pub get
 
-      - name: Run tests
+      - name: Test the app
+        working-directory: apps/mellisuga
         run: flutter test
 
-      - name: Build web
-        # The base href must match the Pages subpath (https://<user>.github.io/<repo>/),
-        # otherwise every asset request 404s.
+      - name: Test the shared content package
+        working-directory: packages/mellisuga_content
+        run: |
+          dart pub get
+          dart test
+
+      - name: Test the landing generator
+        working-directory: apps/jasper
+        run: |
+          dart pub get
+          dart test
+
+      - name: Build the landing site
+        working-directory: apps/jasper
+        run: |
+          dart run bin/build.dart \
+            --out "$GITHUB_WORKSPACE/_site" \
+            --base-href "${{ steps.urls.outputs.base_href }}" \
+            --site-url "${{ steps.urls.outputs.site_url }}"
+
+      - name: Build the app
+        working-directory: apps/mellisuga
+        # `--no-web-resources-cdn` bundles CanvasKit locally so the app makes no
+        # third-party requests at runtime, which is what the privacy policy
+        # promises.
         run: |
           flutter build web \
             --release \
-            --base-href "/${GITHUB_REPOSITORY#*/}/" \
+            --base-href "${{ steps.urls.outputs.app_base_href }}" \
             --no-web-resources-cdn
 
-      - name: Add SPA and Jekyll fallbacks
+      - name: Assemble the deployment
         run: |
-          # GitHub Pages serves 404.html for unknown paths; pointing it at the
-          # app keeps deep links working.
-          cp build/web/index.html build/web/404.html
-          # Without this, Pages' Jekyll step strips files and folders that start
-          # with an underscore.
-          touch build/web/.nojekyll
+          mkdir -p _site/app
+          cp -r apps/mellisuga/build/web/. _site/app/
+          # The landing site's 404 page is the only one Pages serves for a
+          # missing path, including paths under /app/, so it links to both.
+          test -f _site/404.html
+          test -f _site/.nojekyll
+          test -f _site/app/index.html
 
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: build/web
+          path: _site
 
   deploy:
     name: Deploy
