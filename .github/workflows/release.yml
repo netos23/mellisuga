@@ -1,7 +1,8 @@
 name: Release
 
 # Builds native packages for every desktop and mobile target and attaches them
-# to a GitHub release. Web is handled separately by the Pages workflow.
+# to a GitHub release. The web app and the landing site are handled together by
+# the Pages workflow.
 on:
   push:
     tags: ['v*']
@@ -14,6 +15,11 @@ jobs:
   build:
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        # Native builds only ever touch the app. The landing site is a separate
+        # package and is deliberately not bundled into anything shipped here.
+        working-directory: apps/mellisuga
     strategy:
       fail-fast: false
       matrix:
@@ -74,7 +80,7 @@ jobs:
 
       - name: Package Windows
         if: matrix.target == 'windows'
-        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath mellisuga-windows-x64.zip
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath "$env:GITHUB_WORKSPACE/mellisuga-windows-x64.zip"
 
       - name: Package macOS
         if: matrix.target == 'macos'
@@ -85,8 +91,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mellisuga-${{ matrix.target }}
+          # Artifact paths are relative to the workspace, not to the job's
+          # working directory.
           path: |
-            build/app/outputs/flutter-apk/*.apk
+            apps/mellisuga/build/app/outputs/flutter-apk/*.apk
             mellisuga-linux-x64.tar.gz
             mellisuga-windows-x64.zip
             mellisuga-macos.zip
@@ -108,8 +116,8 @@ jobs:
           files: artifacts/**/*
           generate_release_notes: true
           body: |
-            Native builds of Mellisuga. The web version is always available at
-            the project's GitHub Pages URL.
+            Native builds of Mellisuga. The web version, and the pages that
+            describe it, are always available at the project's GitHub Pages URL.
 
             These binaries are unsigned. macOS and Windows will warn on first
             launch; open them via right-click → Open (macOS) or "More info" →

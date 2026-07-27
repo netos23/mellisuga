@@ -4,15 +4,20 @@
 
 > Your files never leave your device. There is no server to send them to.
 
-This document mirrors the policy shown inside the application under
-**About → Privacy Policy**.
+<!--
+  Generated from packages/mellisuga_content by
+  apps/jasper/bin/legal_markdown.dart. Edit the Dart source, not this file.
+-->
+
+This is the same text the application shows under **About → Privacy Policy**,
+and the website shows on its privacy policy page.
 
 ## The short version
 
 Mellisuga runs entirely inside your browser or on your device. Photos and
 documents you open are read into local memory, processed there, and written back
-out to a file you choose. They are never uploaded, transmitted or stored anywhere
-else.
+out to a file you choose. They are never uploaded, transmitted or stored
+anywhere else.
 
 ## What we collect
 
@@ -32,21 +37,26 @@ or last used paper size — in your browser's local storage or the equivalent on
 your device. This data stays on your device, contains no personal information,
 and is cleared when you clear your browser data.
 
+## This website
+
+The pages describing Mellisuga are plain static HTML. They set no cookies, embed
+no analytics, trackers, advertising or social widgets, and load every
+stylesheet, script, font and illustration from the same origin as the page
+itself. The only preference the site remembers is whether you chose the light or
+dark theme, kept in your browser's local storage.
+
 ## Hosting
 
-The web version is served as static files from GitHub Pages. As with any web
-request, GitHub receives your IP address and standard HTTP request metadata in
-order to deliver the page. That processing is governed by
-[GitHub's privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)
-and is outside this application's control. No request your device makes carries
-the contents of your files.
+The website and the web version of the app are served as static files from
+GitHub Pages. As with any web request, GitHub receives your IP address and
+standard HTTP request metadata in order to deliver the page. That processing is
+governed by GitHub's own privacy statement and is outside this project's
+control. No request your device makes carries the contents of your files.
 
 ## Third-party services
 
 The application makes no network requests of its own after it loads. It embeds
-no third-party scripts, no fonts loaded from remote servers, and no tracking
-pixels. The rendering engine (CanvasKit) and the typeface are bundled with the
-application rather than fetched from a CDN.
+no third-party scripts, fonts loaded from remote servers, or tracking pixels.
 
 ## Children
 
@@ -61,11 +71,5 @@ project's public source history.
 
 ## Contact
 
-Questions about this policy can be raised on the
-[issue tracker](https://github.com/netos23/mellisuga/issues).
-
----
-
-*This document describes how this deployment behaves. A fork that adds hosting,
-analytics or any other data processing must update it to match, and it is not
-legal advice.*
+Questions about this policy can be raised on the project's issue tracker, linked
+from the About page.
