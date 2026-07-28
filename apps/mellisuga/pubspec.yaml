@@ -30,6 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: 0.20.2
 
   # Product copy, legal documents, the tool catalogue, print formats and the
   # brand geometry — everything the landing site also has to know. Kept in the
@@ -52,6 +55,16 @@ dependencies:
   cross_file: ^0.3.5+4
   path_provider: ^2.1.6
 
+  # Analytics — every backend here is a no-op unless both a build-time key is
+  # supplied (see SECRETS_SETUP.md) and the user has granted consent (see
+  # lib/core/analytics). firebase_analytics covers Android and web; AppMetrica
+  # for Android goes through this plugin, and for web through a hand-written
+  # loader in lib/core/analytics/appmetrica_web.dart, because AppMetrica has no
+  # Flutter-web plugin of its own.
+  firebase_core: ^4.12.1
+  firebase_analytics: ^12.4.5
+  appmetrica_plugin: ^4.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -69,6 +82,10 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   uses-material-design: true
+
+  # Runs gen-l10n from l10n.yaml before every build/analyze/test, turning
+  # lib/l10n/app_en.arb and its siblings into lib/l10n/generated/.
+  generate: true
 
   assets:
     - assets/fonts/Roboto_LICENSE.txt

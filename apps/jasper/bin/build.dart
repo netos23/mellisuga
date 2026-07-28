@@ -1,8 +1,11 @@
 import 'dart:io';
 
-import 'package:jasper/jasper.dart';
+import 'package:mellisuga_content/mellisuga_content.dart';
+// The site's own `Platform` (a row in the "where it runs" table, from
+// `copy.dart`) would otherwise shadow `dart:io`'s.
+import 'package:jasper/jasper.dart' hide Platform;
 
-/// Builds the landing site.
+/// Builds the landing site, in every supported language.
 ///
 /// ```
 /// dart run bin/build.dart --out build/site \
@@ -12,6 +15,13 @@ import 'package:jasper/jasper.dart';
 /// The two URL arguments are what make one generator serve both a local preview
 /// at `/` and a GitHub Pages project site at `/<repo>/`. Nothing else in the
 /// program knows where the site will live.
+///
+/// Analytics vendor IDs are read from environment variables rather than a
+/// flag, because that is how they arrive in CI — populated from GitHub
+/// secrets, never from a literal in this repository (see
+/// `SECRETS_SETUP.md`). Every one of them defaults to empty, and a build with
+/// nothing set produces exactly the analytics-free site this project always
+/// has.
 Future<int> run(List<String> arguments) async {
   final options = _Options.parse(arguments);
   if (options.help) {
@@ -23,9 +33,10 @@ Future<int> run(List<String> arguments) async {
     baseHref: options.baseHref,
     siteUrl: options.siteUrl,
     buildDate: options.buildDate,
+    analytics: _analyticsFromEnvironment(),
   );
 
-  final site = buildSite(config);
+  final site = buildAllLocales(config);
   final directory = Directory(options.output);
   await writeSite(site, directory);
 
@@ -34,10 +45,30 @@ Future<int> run(List<String> arguments) async {
     ..writeln('  base href  ${config.baseHref}')
     ..writeln('  site URL   ${config.siteUrl}')
     ..writeln('  app URL    ${config.appUrl}')
+    ..writeln('  languages  ${AppLocale.values.map((locale) => locale.code).join(', ')}')
+    ..writeln(
+      '  analytics  ${config.analytics.anyEnabled ? 'enabled' : 'disabled (no vendor configured)'}',
+    )
     ..writeln('  pages      ${site.pages.length}')
     ..writeln('  size       ${(site.byteCount / 1024).toStringAsFixed(1)} KiB');
 
   return 0;
+}
+
+/// Reads every analytics vendor ID from the environment. All empty by
+/// default — see [AnalyticsConfig].
+AnalyticsConfig _analyticsFromEnvironment() {
+  String env(String name) => Platform.environment[name] ?? '';
+
+  return AnalyticsConfig(
+    firebaseApiKey: env('FIREBASE_API_KEY'),
+    firebaseAppId: env('FIREBASE_APP_ID_WEB'),
+    firebaseMessagingSenderId: env('FIREBASE_MESSAGING_SENDER_ID'),
+    firebaseProjectId: env('FIREBASE_PROJECT_ID'),
+    firebaseMeasurementId: env('FIREBASE_MEASUREMENT_ID'),
+    yandexMetricaCounterId: env('YANDEX_METRICA_COUNTER_ID'),
+    appMetricaApiKey: env('APPMETRICA_WEB_API_KEY'),
+  );
 }
 
 Future<void> main(List<String> arguments) async {
@@ -61,6 +92,11 @@ Usage: dart run bin/build.dart [options]
                        Open Graph and the sitemap
   --build-date <date>  ISO date stamped into the sitemap (default: today)
   -h, --help           Show this message
+
+Analytics vendor IDs (all optional, read from the environment — see
+SECRETS_SETUP.md): FIREBASE_API_KEY, FIREBASE_APP_ID_WEB,
+FIREBASE_MESSAGING_SENDER_ID, FIREBASE_PROJECT_ID, FIREBASE_MEASUREMENT_ID,
+YANDEX_METRICA_COUNTER_ID, APPMETRICA_WEB_API_KEY.
 ''';
 
 /// A hand-rolled argument parser, so the generator has no dependencies beyond

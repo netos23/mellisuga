@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 
+import '../../../../core/analytics/analytics_service.dart';
 import '../../../../core/io/file_saver.dart';
 import '../../export/export_options.dart';
 import '../../export/pdf_exporter.dart';
@@ -114,6 +115,13 @@ class _ExportSheetState extends State<ExportSheet> {
       mimeType: file.mimeType,
     );
     if (!mounted) return;
+    if (outcome != SaveOutcome.cancelled) {
+      AnalyticsService.instance.logExportCompleted(
+        toolId: 'photo-compose',
+        format: 'pdf',
+        pageCount: controller.layout.pages.length,
+      );
+    }
     _finish(
       outcome == SaveOutcome.cancelled
           ? 'Export cancelled'
@@ -136,6 +144,13 @@ class _ExportSheetState extends State<ExportSheet> {
         (bytes: file.bytes, suggestedName: file.fileName, mimeType: file.mimeType),
     ]);
     if (!mounted) return;
+    if (written > 0) {
+      AnalyticsService.instance.logExportCompleted(
+        toolId: 'photo-compose',
+        format: _currentOptions.format.name,
+        pageCount: written,
+      );
+    }
     _finish(written == 0 ? 'Export cancelled' : 'Saved $written image${written == 1 ? '' : 's'}');
   });
 

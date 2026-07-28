@@ -111,7 +111,11 @@ void main() {
           .join(' ')
           .toLowerCase();
       expect(text, contains('never uploaded'));
-      expect(text, contains('no analytics'));
+      // Analytics is opt-in and off by default, rather than categorically
+      // absent — the policy has to say so honestly, not claim "no analytics".
+      expect(text, contains('optional'));
+      expect(text, contains('consent'));
+      expect(text, contains('analytics.md'));
     });
   });
 

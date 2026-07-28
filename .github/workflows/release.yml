@@ -57,8 +57,24 @@ jobs:
       - name: Build Android
         if: matrix.target == 'android'
         # Split per ABI so users do not download three architectures they will
-        # never run.
-        run: flutter build apk --release --split-per-abi
+        # never run. Analytics vendor IDs are optional — see
+        # SECRETS_SETUP.md — and every --dart-define below defaults to empty
+        # when its secret is unset, which is what every fork's build does.
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_APP_ID_ANDROID: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
+          APPMETRICA_API_KEY: ${{ secrets.APPMETRICA_API_KEY }}
+        run: |
+          flutter build apk --release --split-per-abi \
+            --dart-define=FIREBASE_API_KEY="$FIREBASE_API_KEY" \
+            --dart-define=FIREBASE_APP_ID_ANDROID="$FIREBASE_APP_ID_ANDROID" \
+            --dart-define=FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
+            --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
+            --dart-define=FIREBASE_MEASUREMENT_ID="$FIREBASE_MEASUREMENT_ID" \
+            --dart-define=APPMETRICA_API_KEY="$APPMETRICA_API_KEY"
 
       - name: Build Linux
         if: matrix.target == 'linux'
