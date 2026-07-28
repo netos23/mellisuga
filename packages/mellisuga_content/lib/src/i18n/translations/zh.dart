@@ -7,7 +7,7 @@ import '../tool_catalog_i18n.dart';
 /// and brand copy.
 const Map<String, ToolTranslation> toolCatalogZh = <String, ToolTranslation>{
   'photo-compose': ToolTranslation(
-    title: '排版打印照片',
+    title: '将照片排版用于打印',
     summary: '将任意尺寸的照片排版到 Letter、A4、A3 或照片纸上,不浪费任何空间。',
     searchSummary: '将证件照、钱包照和 10 × 15 厘米照片排版到一张 A4、Letter 或照片纸上,然后导出 PDF。免费,且不会上传任何内容。',
     highlights: <String>[
@@ -19,22 +19,22 @@ const Map<String, ToolTranslation> toolCatalogZh = <String, ToolTranslation>{
     ],
   ),
   'images-to-pdf': ToolTranslation(
-    title: '图片转 PDF',
+    title: '图片转换为 PDF',
     summary: '将一整个文件夹的图片转换成一份分页的 PDF 文档。',
     highlights: <String>['每页一张图片,自动缩放以适应页面', '选择页面大小、方向和边距', '导出前可调整页面顺序'],
   ),
   'pdf-merge': ToolTranslation(
-    title: '合并 PDF',
+    title: '合并多个 PDF',
     summary: '按照你选择的顺序,将多个 PDF 文件合并为一个。',
     highlights: <String>['拖拽即可调整文档顺序', '合并前预览每一页内容'],
   ),
   'pdf-split': ToolTranslation(
-    title: '拆分 PDF',
+    title: '拆分 PDF 文件',
     summary: '提取指定页面,或将一份文档拆分成多个文件。',
     highlights: <String>['通过可视化方式选择页面范围', '按每 N 页拆分,或按书签拆分'],
   ),
   'pdf-to-images': ToolTranslation(
-    title: 'PDF 转图片',
+    title: '将 PDF 转换为图片',
     summary: '按你选择的分辨率,将 PDF 的每一页渲染为 PNG 或 JPEG。',
     highlights: <String>['每次导出可自定义 DPI', '导出指定页面范围或整份文档'],
   ),
@@ -44,12 +44,12 @@ const Map<String, ToolTranslation> toolCatalogZh = <String, ToolTranslation>{
     highlights: <String>['按像素、百分比或打印尺寸调整大小', '导出时清除元数据'],
   ),
   'pdf-organise': ToolTranslation(
-    title: '旋转与重排页面',
-    summary: '无需离开浏览器即可调整页面顺序和方向。',
+    title: '旋转与重新排列页面',
+    summary: '无需离开浏览器,即可调整页面的顺序和方向。',
     highlights: <String>['旋转单个页面或整份文档', '删除和复制页面'],
   ),
   'watermark': ToolTranslation(
-    title: '添加水印',
+    title: '添加文字或图片水印',
     summary: '在页面和照片上添加文字或图片水印。',
     searchSummary: '在 PDF 页面和照片上平铺或单次添加文字或图片水印,可控制透明度、旋转角度和颜色。不会上传任何内容。',
     highlights: <String>['支持平铺或单次放置', '可控制透明度、旋转角度和颜色'],

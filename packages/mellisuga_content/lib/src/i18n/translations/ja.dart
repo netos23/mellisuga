@@ -25,12 +25,12 @@ const Map<String, ToolTranslation> toolCatalogJa = <String, ToolTranslation>{
     highlights: <String>['1ページに1枚の画像を、サイズに合わせて自動調整', 'ページサイズ、向き、余白を選択可能', '書き出し前にページの並び替えが可能'],
   ),
   'pdf-merge': ToolTranslation(
-    title: 'PDFを結合',
+    title: 'PDFファイルを結合',
     summary: '複数のPDFファイルを、指定した順番で1つに結合します。',
     highlights: <String>['ドラッグして文書の順番を並び替え', '結合前にすべてのページをプレビュー'],
   ),
   'pdf-split': ToolTranslation(
-    title: 'PDFを分割',
+    title: 'PDFファイルを分割',
     summary: 'ページを抽出したり、1つの文書を複数のファイルに分割したりできます。',
     highlights: <String>['ページ範囲を視覚的に選択', 'N ページごと、またはしおりの位置で分割'],
   ),
@@ -50,7 +50,7 @@ const Map<String, ToolTranslation> toolCatalogJa = <String, ToolTranslation>{
     highlights: <String>['個々のページ、または文書全体を回転', 'ページの削除と複製'],
   ),
   'watermark': ToolTranslation(
-    title: '透かし',
+    title: '透かしを追加する',
     summary: 'ページや写真に、テキストまたは画像の透かしを入れます。',
     searchSummary: 'PDFのページや写真にテキストまたは画像の透かしをタイル状または単一配置で入れられ、不透明度・回転・色を細かく調整できます。アップロードは一切行われません。',
     highlights: <String>['タイル状配置または単一配置', '不透明度、回転、色を調整可能'],

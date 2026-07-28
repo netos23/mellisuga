@@ -84,8 +84,8 @@ const Map<String, String> siteStringsDe = <String, String>{
   'toolsIndex.metaTitle': 'Foto- und PDF-Werkzeuge, die auf Ihrem Gerät laufen',
   'toolsIndex.metaDescription':
       'Jedes {brand}-Werkzeug: Fotos für den Druck zusammenstellen, PDFs zusammenführen und '
-      'aufteilen, Bilder konvertieren, mit Wasserzeichen versehen und mehr — alles '
-      'clientseitig, nichts wird hochgeladen.',
+      'aufteilen, Bilder konvertieren, Wasserzeichen und mehr — alles clientseitig, nichts '
+      'wird hochgeladen.',
   'toolsIndex.summary':
       '{available} fertig, {roadmap} unterwegs. Jedes von ihnen erledigt seine Arbeit auf '
       'Ihrem eigenen Gerät.',

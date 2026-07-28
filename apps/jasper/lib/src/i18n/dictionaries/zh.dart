@@ -73,7 +73,7 @@ const Map<String, String> siteStringsZh = <String, String>{
   'legal.proseFootRepoLink': '公开源代码仓库中',
   'legal.otherDocuments': '其他文档:',
   'legal.bannerNote': '以上内容描述的都是应用当前的实际行为。',
-  'notFound.heading': '这里什么都没有',
+  'notFound.heading': '这里什么都没有找到',
   'notFound.lead': '你访问的页面不存在 — 不过在此过程中没有上传任何内容,所以无需担心。',
   'notFound.backToStart': '返回首页',
   'notFound.orJumpTo': '或前往',
