@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:mellisuga_content/mellisuga_content.dart';
 
-import '../../core/app_info.dart';
+import '../../core/localization/app_locale_context.dart';
 import '../../core/tools/tool_definition.dart';
 import '../../core/tools/tool_registry.dart';
 import '../../core/widgets/app_logo.dart';
 import '../../core/widgets/responsive.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 /// The tool gallery: every utility the app offers, grouped by category.
 class HomePage extends StatelessWidget {
@@ -15,6 +17,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final locale = context.appLocale;
 
     return SingleChildScrollView(
       child: ReadableWidth(
@@ -26,7 +29,7 @@ class HomePage extends StatelessWidget {
             const AppLogoBadge(size: 64),
             const SizedBox(height: 22),
             Text(
-              AppInfo.tagline,
+              locale.brandTaglineIn(),
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.6,
@@ -36,7 +39,7 @@ class HomePage extends StatelessWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 620),
               child: Text(
-                AppInfo.description,
+                locale.brandDescriptionIn(),
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   height: 1.55,
@@ -70,7 +73,7 @@ class _CategoryHeader extends StatelessWidget {
         Icon(category.icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
         const SizedBox(width: 8),
         Text(
-          category.label,
+          category.labelIn(context.appLocale),
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w700,
             letterSpacing: 0.2,
@@ -153,7 +156,7 @@ class _ToolCard extends StatelessWidget {
                   const Spacer(),
                   if (!available)
                     Text(
-                      'Soon',
+                      AppLocalizations.of(context).drawerSoon,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: scheme.onSurfaceVariant,
                         fontWeight: FontWeight.w700,
@@ -164,7 +167,7 @@ class _ToolCard extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                tool.title,
+                tool.titleIn(context),
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: available ? null : scheme.onSurfaceVariant,
@@ -172,7 +175,7 @@ class _ToolCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                tool.summary,
+                tool.summaryIn(context),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant,
                   height: 1.45,

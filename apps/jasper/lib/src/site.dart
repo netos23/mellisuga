@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:mellisuga_content/mellisuga_content.dart';
 
+import 'analytics.dart';
 import 'assets.dart';
 import 'illustrations.dart';
 import 'pages/home_page.dart';
@@ -29,31 +30,80 @@ class Site {
   int get byteCount => files.values.fold(0, (total, contents) => total + contents.length);
 }
 
-/// Renders the whole site.
+/// Renders one locale's pages.
 ///
 /// Each page carries its own metadata, so the sitemap is assembled from the
 /// pages that were actually built rather than from a second list that has to be
-/// kept in step with the first.
+/// kept in step with the first. [includeNotFoundPage] is `false` when this is
+/// being built as one of the non-default locales inside [buildAllLocales] —
+/// GitHub Pages only ever serves a single site-root `404.html`, so there is no
+/// use in building one under every locale prefix too.
+List<RenderedPage> _buildPages(SiteConfig config, {bool includeNotFoundPage = true}) =>
+    <RenderedPage>[
+      buildHomePage(config),
+      buildToolsIndexPage(config),
+      for (final tool in ToolCatalog.tools) buildToolPage(config, tool),
+      for (final document in LegalContent.documents) buildLegalPage(config, document),
+      if (includeNotFoundPage) buildNotFoundPage(config),
+    ];
+
+/// Renders the site in a single locale — [config.locale], defaulting to
+/// English — at the site root, exactly as if the other seven languages did
+/// not exist. This is what every pre-existing test builds against; multi-
+/// language builds go through [buildAllLocales] instead.
 Site buildSite(SiteConfig config) {
-  final pages = <RenderedPage>[
-    buildHomePage(config),
-    buildToolsIndexPage(config),
-    for (final tool in ToolCatalog.tools) buildToolPage(config, tool),
-    for (final document in LegalContent.documents) buildLegalPage(config, document),
-    buildNotFoundPage(config),
-  ];
+  final pages = _buildPages(config);
 
   final files = <String, String>{
     for (final page in pages) page.meta.filePath: page.html,
     'styles.css': Assets.styles,
     'site.js': Assets.script,
     'icon.svg': Illustrations.faviconFile(),
-    'sitemap.xml': renderSitemap(config, pages.map((page) => page.meta).toList(growable: false)),
+    'sitemap.xml': renderSitemap(config.buildDate, [
+      for (final page in pages) (canonicalUrl: config.canonical(page.meta.path), meta: page.meta),
+    ]),
     'robots.txt': renderRobots(config),
     // GitHub Pages runs Jekyll unless told otherwise, and Jekyll silently drops
     // files and directories whose names begin with an underscore.
     '.nojekyll': '',
+    if (config.analytics.anyEnabled) 'analytics.js': analyticsScript(config),
   };
+
+  return Site(files: files, pages: pages);
+}
+
+/// Renders the full multilingual site: [AppLocale.en] at the site root, as
+/// [buildSite] already does, plus every other [AppLocale] under its own path
+/// prefix (`fr/`, `de/`, …). The two share one stylesheet, script, icon,
+/// `robots.txt`, `.nojekyll` marker and site-root `404.html` — only the pages
+/// themselves are built again per locale — and one sitemap lists every page
+/// from every language.
+///
+/// [config]'s own `locale` field is ignored; it exists so callers can still
+/// pass the same [SiteConfig] they would give [buildSite].
+Site buildAllLocales(SiteConfig config) {
+  final english = buildSite(config.withLocale(AppLocale.en));
+
+  final pages = <RenderedPage>[...english.pages];
+  final files = <String, String>{...english.files};
+  final sitemapEntries = <SitemapEntry>[
+    for (final page in english.pages)
+      (canonicalUrl: config.withLocale(AppLocale.en).canonical(page.meta.path), meta: page.meta),
+  ];
+
+  for (final locale in AppLocale.values) {
+    if (locale == AppLocale.en) continue;
+    final localeConfig = config.withLocale(locale);
+    final localePages = _buildPages(localeConfig, includeNotFoundPage: false);
+
+    pages.addAll(localePages);
+    for (final page in localePages) {
+      files['${localeConfig.localePrefix}${page.meta.filePath}'] = page.html;
+      sitemapEntries.add((canonicalUrl: localeConfig.canonical(page.meta.path), meta: page.meta));
+    }
+  }
+
+  files['sitemap.xml'] = renderSitemap(config.buildDate, sitemapEntries);
 
   return Site(files: files, pages: pages);
 }

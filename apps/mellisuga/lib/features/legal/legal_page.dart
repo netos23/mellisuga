@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:mellisuga_content/mellisuga_content.dart';
 
+import '../../core/localization/app_locale_context.dart';
 import '../../core/widgets/responsive.dart';
-import 'legal_content.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 /// Renders one of the app's legal documents.
 class LegalPage extends StatelessWidget {
@@ -19,6 +21,7 @@ class LegalPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final englishOnlyNotice = LegalNotices.englishOnlyNotice(context.appLocale);
 
     return SingleChildScrollView(
       child: ReadableWidth(
@@ -41,9 +44,19 @@ class LegalPage extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Last updated ${document.lastUpdated}',
+              AppLocalizations.of(context).legalLastUpdated(document.lastUpdated),
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
+            if (englishOnlyNotice != null) ...[
+              const SizedBox(height: 16),
+              Card(
+                color: theme.colorScheme.surfaceContainerHigh,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Text(englishOnlyNotice, style: theme.textTheme.bodyMedium),
+                ),
+              ),
+            ],
             const SizedBox(height: 28),
             for (final section in document.sections) ...[
               Text(

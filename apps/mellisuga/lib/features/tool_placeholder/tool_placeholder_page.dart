@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/app_info.dart';
 import '../../core/tools/tool_definition.dart';
 import '../../core/widgets/responsive.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 /// Shown for tools that are on the roadmap but not built yet.
 ///
@@ -19,6 +20,7 @@ class ToolPlaceholderPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return SingleChildScrollView(
       child: ReadableWidth(
@@ -40,13 +42,13 @@ class ToolPlaceholderPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    tool.title,
+                    tool.titleIn(context),
                     style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Chip(
-                  label: const Text('Not built yet'),
+                  label: Text(l10n.toolNotBuiltYetChip),
                   visualDensity: VisualDensity.compact,
                   backgroundColor: scheme.surfaceContainerHighest,
                   side: BorderSide(color: scheme.outlineVariant),
@@ -55,17 +57,17 @@ class ToolPlaceholderPage extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              tool.summary,
+              tool.summaryIn(context),
               style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: 28),
             if (tool.highlights.isNotEmpty) ...[
               Text(
-                'Planned capabilities',
+                l10n.toolPlannedCapabilities,
                 style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
-              for (final highlight in tool.highlights)
+              for (final highlight in tool.highlightsIn(context))
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Row(
@@ -89,13 +91,12 @@ class ToolPlaceholderPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Want this sooner?',
+                      l10n.toolWantSooner,
                       style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Tools are added in the order people ask for them. '
-                      'Open an issue to make the case for this one.',
+                      l10n.toolWantSoonerBody,
                       style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 14),
@@ -107,7 +108,7 @@ class ToolPlaceholderPage extends StatelessWidget {
                           mode: LaunchMode.externalApplication,
                         ),
                         icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                        label: const Text('Open the issue tracker'),
+                        label: Text(l10n.toolOpenIssueTracker),
                       ),
                     ),
                   ],

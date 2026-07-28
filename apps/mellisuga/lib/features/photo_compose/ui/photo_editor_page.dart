@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../l10n/generated/app_localizations.dart';
 import '../models/photo_edits.dart';
 import '../models/photo_item.dart';
 import 'painting/photo_painting.dart';
@@ -9,14 +10,19 @@ import 'widgets/crop_overlay.dart';
 
 /// Which editing tool is active.
 enum EditorTool {
-  crop('Crop', Icons.crop_rounded),
-  transform('Rotate', Icons.rotate_90_degrees_ccw_rounded),
-  draw('Draw', Icons.gesture_rounded);
+  crop(Icons.crop_rounded),
+  transform(Icons.rotate_90_degrees_ccw_rounded),
+  draw(Icons.gesture_rounded);
 
-  const EditorTool(this.label, this.icon);
+  const EditorTool(this.icon);
 
-  final String label;
   final IconData icon;
+
+  String labelIn(AppLocalizations l10n) => switch (this) {
+    EditorTool.crop => l10n.editorToolCrop,
+    EditorTool.transform => l10n.editorToolRotate,
+    EditorTool.draw => l10n.editorToolDraw,
+  };
 }
 
 /// Full-screen editor for a single photo.
@@ -146,13 +152,14 @@ class _PhotoEditorPageState extends State<PhotoEditorPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surfaceContainerLowest,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close_rounded),
-          tooltip: 'Discard changes',
+          tooltip: l10n.editorDiscardChanges,
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(widget.item.label ?? widget.item.fileName, overflow: TextOverflow.ellipsis),
@@ -160,13 +167,13 @@ class _PhotoEditorPageState extends State<PhotoEditorPage> {
           TextButton.icon(
             onPressed: _edits.isIdentity ? null : _reset,
             icon: const Icon(Icons.restart_alt_rounded, size: 18),
-            label: const Text('Reset'),
+            label: Text(l10n.editorReset),
           ),
           const SizedBox(width: 8),
           FilledButton.icon(
             onPressed: () => Navigator.of(context).pop(_edits),
             icon: const Icon(Icons.check_rounded, size: 18),
-            label: Text(_dirty ? 'Apply' : 'Done'),
+            label: Text(_dirty ? l10n.editorApply : l10n.editorDone),
           ),
           const SizedBox(width: 12),
         ],
@@ -189,7 +196,7 @@ class _PhotoEditorPageState extends State<PhotoEditorPage> {
             }),
             destinations: [
               for (final tool in EditorTool.values)
-                NavigationDestination(icon: Icon(tool.icon), label: tool.label),
+                NavigationDestination(icon: Icon(tool.icon), label: tool.labelIn(l10n)),
             ],
           ),
         ],
@@ -274,13 +281,14 @@ class _PhotoEditorPageState extends State<PhotoEditorPage> {
   }
 
   Widget _buildCropControls(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     final printAspect = widget.item.printSize.aspectRatio;
     final sourceAspect = widget.item.naturalWidth / widget.item.naturalHeight;
 
     final options = <(String, double?)>[
-      ('Free', null),
-      ('Print size', printAspect),
-      ('Original', sourceAspect),
+      (l10n.editorCropFree, null),
+      (l10n.editorCropPrintSize, printAspect),
+      (l10n.editorCropOriginal, sourceAspect),
       ('1:1', 1),
       ('4:3', 4 / 3),
       ('3:4', 3 / 4),
@@ -291,7 +299,7 @@ class _PhotoEditorPageState extends State<PhotoEditorPage> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          Text('Lock to', style: theme.textTheme.labelMedium),
+          Text(l10n.editorLockTo, style: theme.textTheme.labelMedium),
           const SizedBox(width: 12),
           for (final (label, aspect) in options)
             Padding(
@@ -308,7 +316,7 @@ class _PhotoEditorPageState extends State<PhotoEditorPage> {
                 ? null
                 : () => _update(_edits.copyWith(cropRect: const Rect.fromLTWH(0, 0, 1, 1))),
             icon: const Icon(Icons.crop_free_rounded, size: 18),
-            label: const Text('Whole photo'),
+            label: Text(l10n.editorWholePhoto),
           ),
         ],
       ),
@@ -321,30 +329,31 @@ class _PhotoEditorPageState extends State<PhotoEditorPage> {
   }
 
   Widget _buildTransformControls(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
           _ToolButton(
             icon: Icons.rotate_left_rounded,
-            label: 'Rotate left',
+            label: l10n.editorRotateLeft,
             onPressed: () => _update(_edits.copyWith(quarterTurns: _edits.quarterTurns - 1)),
           ),
           _ToolButton(
             icon: Icons.rotate_right_rounded,
-            label: 'Rotate right',
+            label: l10n.editorRotateRight,
             onPressed: () => _update(_edits.copyWith(quarterTurns: _edits.quarterTurns + 1)),
           ),
           const SizedBox(width: 8),
           _ToolButton(
             icon: Icons.flip_rounded,
-            label: 'Flip across',
+            label: l10n.editorFlipAcross,
             selected: _edits.flipHorizontal,
             onPressed: () => _update(_edits.copyWith(flipHorizontal: !_edits.flipHorizontal)),
           ),
           _ToolButton(
             icon: Icons.flip_rounded,
-            label: 'Flip down',
+            label: l10n.editorFlipDown,
             rotateIcon: true,
             selected: _edits.flipVertical,
             onPressed: () => _update(_edits.copyWith(flipVertical: !_edits.flipVertical)),
@@ -355,6 +364,7 @@ class _PhotoEditorPageState extends State<PhotoEditorPage> {
   }
 
   Widget _buildDrawControls(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     const palette = [
       Color(0xFFE0457B),
       Color(0xFFEF4444),
@@ -364,7 +374,11 @@ class _PhotoEditorPageState extends State<PhotoEditorPage> {
       Color(0xFF111827),
       Color(0xFFFFFFFF),
     ];
-    const widths = [('Thin', 0.004), ('Medium', 0.010), ('Thick', 0.024)];
+    final widths = [
+      (l10n.editorStrokeThin, 0.004),
+      (l10n.editorStrokeMedium, 0.010),
+      (l10n.editorStrokeThick, 0.024),
+    ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -411,18 +425,18 @@ class _PhotoEditorPageState extends State<PhotoEditorPage> {
           const SizedBox(width: 12),
           _ToolButton(
             icon: Icons.auto_fix_normal_rounded,
-            label: 'Erase strokes',
+            label: l10n.editorEraseStrokes,
             selected: _erasing,
             onPressed: () => setState(() => _erasing = !_erasing),
           ),
           _ToolButton(
             icon: Icons.undo_rounded,
-            label: 'Undo stroke',
+            label: l10n.editorUndoStroke,
             onPressed: _edits.strokes.isEmpty ? null : _undoStroke,
           ),
           _ToolButton(
             icon: Icons.layers_clear_rounded,
-            label: 'Clear drawing',
+            label: l10n.editorClearDrawing,
             onPressed: _edits.strokes.isEmpty
                 ? null
                 : () => _update(_edits.copyWith(strokes: const <DrawStroke>[])),

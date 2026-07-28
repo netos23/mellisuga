@@ -86,7 +86,11 @@ jobs:
         run: flutter pub get
 
       - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed --line-length 100 lib test
+        # lib/l10n/generated is produced fresh by gen-l10n on every `pub get`
+        # (see flutter.generate in pubspec.yaml) and is not itself
+        # hand-formatted to this project's line length, so it is excluded —
+        # everything actually written by hand still gets checked.
+        run: dart format --output=none --set-exit-if-changed --line-length 100 lib/app.dart lib/core lib/features lib/main.dart test
 
       - name: Analyze
         run: flutter analyze --fatal-infos

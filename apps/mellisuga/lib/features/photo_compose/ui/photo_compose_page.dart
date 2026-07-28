@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/responsive.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../state/compose_controller.dart';
 import '../state/compose_scope.dart';
 import 'photo_editor_page.dart';
@@ -147,12 +148,11 @@ class _PhotoComposePageState extends State<PhotoComposePage> {
       return _EmptyStage(onAdd: controller.pickAndAddPhotos, busy: controller.isBusy);
     }
     if (!controller.hasPages) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
           child: Text(
-            'Nothing could be placed on the sheet. Try a larger paper size or '
-            'smaller print sizes.',
+            AppLocalizations.of(context).composeNothingPlaced,
             textAlign: TextAlign.center,
           ),
         ),
@@ -199,15 +199,13 @@ class _EmptyStage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                'Fit more photos on every sheet',
+                AppLocalizations.of(context).composeEmptyTitle,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 10),
               Text(
-                'Add photos, give each one a print size, and Mellisuga packs '
-                'them onto as few pages as possible. Everything happens on this '
-                'device — nothing is uploaded.',
+                AppLocalizations.of(context).composeEmptyBody,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -217,7 +215,7 @@ class _EmptyStage extends StatelessWidget {
               FilledButton.icon(
                 onPressed: busy ? null : onAdd,
                 icon: const Icon(Icons.add_photo_alternate_outlined),
-                label: const Text('Add photos'),
+                label: Text(AppLocalizations.of(context).composeAddPhotos),
               ),
             ],
           ),
@@ -241,7 +239,10 @@ class _BusyBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(controller.statusMessage ?? 'Working…', style: theme.textTheme.bodySmall),
+          Text(
+            controller.statusMessage ?? AppLocalizations.of(context).composeWorking,
+            style: theme.textTheme.bodySmall,
+          ),
           const SizedBox(height: 6),
           LinearProgressIndicator(
             value: controller.progress == 0 ? null : controller.progress,
@@ -269,7 +270,7 @@ class _ImportFailureBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${failures.length} file${failures.length == 1 ? '' : 's'} could not be added',
+            AppLocalizations.of(context).composeFilesCouldNotBeAdded(failures.length),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onErrorContainer,
               fontWeight: FontWeight.w600,
@@ -284,7 +285,10 @@ class _ImportFailureBanner extends StatelessWidget {
         ],
       ),
       actions: [
-        TextButton(onPressed: controller.dismissImportFailures, child: const Text('Dismiss')),
+        TextButton(
+          onPressed: controller.dismissImportFailures,
+          child: Text(AppLocalizations.of(context).composeDismiss),
+        ),
       ],
     );
   }

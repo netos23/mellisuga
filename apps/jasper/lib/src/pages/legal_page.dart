@@ -8,7 +8,12 @@ import 'partials.dart';
 
 /// A page per legal document, rendered from the same text the app shows on its
 /// own screens. Neither copy can drift, because there is only one.
+///
+/// The document's own body text is not translated — see [LegalNotices] — so
+/// every locale shows the same English sections; only the page's chrome
+/// (breadcrumb, table of contents, footer) follows [SiteConfig.locale].
 RenderedPage buildLegalPage(SiteConfig config, LegalDocument document) {
+  final strings = config.strings;
   final meta = PageMeta(
     path: document.path,
     title: '${document.title} — ${Brand.name}',
@@ -16,7 +21,7 @@ RenderedPage buildLegalPage(SiteConfig config, LegalDocument document) {
     priority: 0.3,
     changeFrequency: 'yearly',
     breadcrumbs: [
-      const Crumb(name: 'Home', path: ''),
+      Crumb(name: strings.crumbHome, path: ''),
       Crumb(name: document.title, path: document.path),
     ],
     structuredData: [StructuredData.legalPage(config, document)],
@@ -27,13 +32,13 @@ RenderedPage buildLegalPage(SiteConfig config, LegalDocument document) {
       config: config,
       title: document.title,
       summary: document.summary,
-      eyebrow: 'Last updated ${document.lastUpdated}',
-      crumbs: [(name: 'Home', path: '')],
+      eyebrow: strings.legalLastUpdated(document.lastUpdated),
+      crumbs: [(name: strings.crumbHome, path: '')],
       // Matches the column the document itself is set in.
       narrow: true,
     ),
     _document(config, document),
-    openAppBanner(config, note: 'Every word above describes how the app already behaves.'),
+    openAppBanner(config, note: strings.legalBannerNote),
   ]);
 
   return RenderedPage(
@@ -43,6 +48,9 @@ RenderedPage buildLegalPage(SiteConfig config, LegalDocument document) {
 }
 
 String _document(SiteConfig config, LegalDocument document) {
+  final strings = config.strings;
+  final englishOnlyNotice = LegalNotices.englishOnlyNotice(config.locale);
+
   final contents = document.sections
       .map(
         (section) =>
@@ -55,8 +63,9 @@ String _document(SiteConfig config, LegalDocument document) {
   return '''
 <section class="section">
   <div class="wrap wrap--narrow prose">
+    ${englishOnlyNotice == null ? '' : '<div class="note">\n      <p>${escapeHtml(englishOnlyNotice)}</p>\n    </div>\n'}
     <nav class="toc" aria-label="On this page">
-      <h2>On this page</h2>
+      <h2>${escapeHtml(strings.legalOnThisPage)}</h2>
       <ol>
 $contents
       </ol>
@@ -65,10 +74,10 @@ $contents
 $sections
 ${document.id == 'licences' ? _components() : ''}
     <p class="prose__foot">
-      The same document is readable inside the app under
-      <strong>About</strong>, and its history is in the
-      <a href="${Brand.repositoryUrl}" rel="noopener">public source repository</a>.
-      Other documents:
+      ${escapeHtml(strings.legalProseFootBefore)}
+      <strong>${escapeHtml(strings.legalProseFootAppLink)}</strong>${escapeHtml(strings.legalProseFootMiddle)}
+      <a href="${Brand.repositoryUrl}" rel="noopener">${escapeHtml(strings.legalProseFootRepoLink)}</a>.
+      ${escapeHtml(strings.legalOtherDocuments)}
 ${LegalContent.documents.where((other) => other.id != document.id).map((other) => '      <a href="${config.url(other.path)}">${escapeHtml(other.title)}</a>').join(' ·\n')}
     </p>
   </div>

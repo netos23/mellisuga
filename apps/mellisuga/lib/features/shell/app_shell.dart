@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:mellisuga_content/mellisuga_content.dart';
 
+import '../../core/analytics/analytics_service.dart';
 import '../../core/app_info.dart';
+import '../../core/localization/app_locale_context.dart';
 import '../../core/tools/tool_definition.dart';
 import '../../core/tools/tool_registry.dart';
 import '../../core/widgets/app_logo.dart';
 import '../../core/widgets/responsive.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../home/home_page.dart';
 import '../legal/about_page.dart';
-import '../legal/legal_content.dart';
 import '../legal/legal_page.dart';
+import 'language_picker.dart';
 
 /// The application frame: branding, tool navigation and theme control.
 ///
@@ -16,10 +20,20 @@ import '../legal/legal_page.dart';
 /// lives above this widget, so switching tools — or stepping out to read the
 /// privacy policy — never discards work in progress.
 class AppShell extends StatefulWidget {
-  const AppShell({super.key, required this.themeMode, required this.onThemeModeChanged});
+  const AppShell({
+    super.key,
+    required this.themeMode,
+    required this.onThemeModeChanged,
+    required this.locale,
+    required this.onLocaleChanged,
+  });
 
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode> onThemeModeChanged;
+
+  /// `null` means "follow the system locale".
+  final Locale? locale;
+  final ValueChanged<AppLocale?> onLocaleChanged;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -28,6 +42,11 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   /// `null` means the home gallery is showing.
   ToolDefinition? _tool;
+
+  void _selectTool(ToolDefinition? tool) {
+    setState(() => _tool = tool);
+    if (tool != null) AnalyticsService.instance.logToolOpened(tool.id);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +64,7 @@ class _AppShellState extends State<AppShell> {
                   tools: ToolRegistry.tools,
                   selected: _tool,
                   extended: MediaQuery.sizeOf(context).width >= Breakpoints.extendedRail,
-                  onSelect: (tool) => setState(() => _tool = tool),
+                  onSelect: _selectTool,
                 ),
                 const VerticalDivider(width: 1),
               ],
@@ -60,19 +79,20 @@ class _AppShellState extends State<AppShell> {
   Widget _buildBody() {
     final tool = _tool;
     if (tool == null) {
-      return HomePage(onOpenTool: (tool) => setState(() => _tool = tool));
+      return HomePage(onOpenTool: _selectTool);
     }
     return ToolRegistry.buildScreen(context, tool);
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context, ScreenSize screen) {
     final tool = _tool;
+    final l10n = AppLocalizations.of(context);
     return AppBar(
       title: Row(
         children: [
           if (!screen.isCompact || tool == null)
             InkWell(
-              onTap: () => setState(() => _tool = null),
+              onTap: () => _selectTool(null),
               borderRadius: BorderRadius.circular(8),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -87,7 +107,7 @@ class _AppShellState extends State<AppShell> {
               ),
             Flexible(
               child: Text(
-                tool.title,
+                tool.titleIn(context),
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(
                   context,
@@ -100,9 +120,9 @@ class _AppShellState extends State<AppShell> {
       actions: [
         IconButton(
           tooltip: switch (widget.themeMode) {
-            ThemeMode.light => 'Switch to dark theme',
-            ThemeMode.dark => 'Use the system theme',
-            ThemeMode.system => 'Switch to light theme',
+            ThemeMode.light => l10n.themeSwitchToDark,
+            ThemeMode.dark => l10n.themeUseSystemTheme,
+            ThemeMode.system => l10n.themeSwitchToLight,
           },
           icon: Icon(switch (widget.themeMode) {
             ThemeMode.light => Icons.light_mode_outlined,
@@ -116,16 +136,23 @@ class _AppShellState extends State<AppShell> {
           }),
         ),
         PopupMenuButton<String>(
-          tooltip: 'About and legal',
+          tooltip: l10n.aboutAndLegalTooltip,
           icon: const Icon(Icons.more_vert_rounded),
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: 'about', child: Text('About Mellisuga')),
-            PopupMenuItem(value: 'privacy', child: Text('Privacy Policy')),
-            PopupMenuItem(value: 'terms', child: Text('Terms of Use')),
-            PopupMenuItem(value: 'licences', child: Text('Open source licences')),
+          itemBuilder: (context) => [
+            PopupMenuItem(value: 'language', child: Text(l10n.menuLanguage)),
+            PopupMenuItem(value: 'about', child: Text(l10n.menuAboutMellisuga)),
+            PopupMenuItem(value: 'privacy', child: Text(l10n.menuPrivacyPolicy)),
+            PopupMenuItem(value: 'terms', child: Text(l10n.menuTermsOfUse)),
+            PopupMenuItem(value: 'licences', child: Text(l10n.menuOpenSourceLicences)),
           ],
           onSelected: (value) {
             switch (value) {
+              case 'language':
+                showLanguagePicker(
+                  context,
+                  currentLocale: widget.locale,
+                  onSelected: widget.onLocaleChanged,
+                );
               case 'about':
                 Navigator.of(context).push(AboutPage.route());
               case 'privacy':
@@ -150,6 +177,7 @@ class _AppShellState extends State<AppShell> {
 
   Widget _buildDrawer(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Drawer(
       child: SafeArea(
         child: Column(
@@ -166,18 +194,18 @@ class _AppShellState extends State<AppShell> {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.home_outlined),
-                    title: const Text('All tools'),
+                    title: Text(l10n.drawerAllTools),
                     selected: _tool == null,
                     onTap: () {
                       Navigator.of(context).pop();
-                      setState(() => _tool = null);
+                      _selectTool(null);
                     },
                   ),
                   for (final category in ToolCategory.values) ...[
                     Padding(
                       padding: const EdgeInsets.fromLTRB(24, 16, 16, 6),
                       child: Text(
-                        category.label.toUpperCase(),
+                        category.labelIn(context.appLocale).toUpperCase(),
                         style: theme.textTheme.labelSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.8,
@@ -188,12 +216,12 @@ class _AppShellState extends State<AppShell> {
                     for (final tool in ToolRegistry.inCategory(category))
                       ListTile(
                         leading: Icon(tool.icon),
-                        title: Text(tool.title),
-                        subtitle: tool.status.isAvailable ? null : const Text('Soon'),
+                        title: Text(tool.titleIn(context)),
+                        subtitle: tool.status.isAvailable ? null : Text(l10n.drawerSoon),
                         selected: _tool?.id == tool.id,
                         onTap: () {
                           Navigator.of(context).pop();
-                          setState(() => _tool = tool);
+                          _selectTool(tool);
                         },
                       ),
                   ],
@@ -203,7 +231,7 @@ class _AppShellState extends State<AppShell> {
             const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.info_outline_rounded),
-              title: const Text('About & legal'),
+              title: Text(l10n.drawerAboutAndLegal),
               onTap: () {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(AboutPage.route());
@@ -233,6 +261,7 @@ class _NavigationRailSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     // Index 0 is the home gallery; tools follow in registry order.
     final index = selected == null ? 0 : tools.indexWhere((tool) => tool.id == selected!.id) + 1;
+    final l10n = AppLocalizations.of(context);
 
     return SingleChildScrollView(
       child: ConstrainedBox(
@@ -247,15 +276,15 @@ class _NavigationRailSidebar extends StatelessWidget {
             labelType: extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
             onDestinationSelected: (value) => onSelect(value == 0 ? null : tools[value - 1]),
             destinations: [
-              const NavigationRailDestination(
-                icon: Icon(Icons.grid_view_outlined),
-                selectedIcon: Icon(Icons.grid_view_rounded),
-                label: Text('Tools'),
+              NavigationRailDestination(
+                icon: const Icon(Icons.grid_view_outlined),
+                selectedIcon: const Icon(Icons.grid_view_rounded),
+                label: Text(l10n.navRailTools),
               ),
               for (final tool in tools)
                 NavigationRailDestination(
                   icon: Icon(tool.icon),
-                  label: Text(_shortLabel(tool), textAlign: TextAlign.center),
+                  label: Text(_shortLabel(context, tool), textAlign: TextAlign.center),
                   disabled: false,
                 ),
             ],
@@ -265,16 +294,24 @@ class _NavigationRailSidebar extends StatelessWidget {
     );
   }
 
-  /// Rail labels have very little room, so long tool names are shortened.
-  static String _shortLabel(ToolDefinition tool) => switch (tool.id) {
-    'photo-compose' => 'Compose',
-    'images-to-pdf' => 'To PDF',
-    'pdf-merge' => 'Merge',
-    'pdf-split' => 'Split',
-    'pdf-to-images' => 'To images',
-    'image-resize' => 'Resize',
-    'pdf-organise' => 'Organise',
-    'watermark' => 'Watermark',
-    _ => tool.title,
+  /// Rail labels have very little room, so English gets a shortened label per
+  /// tool. Every other locale uses the full translated title instead of a
+  /// second, separately maintained set of abbreviations per language — the
+  /// rail wraps rather than breaking.
+  static String _shortLabel(BuildContext context, ToolDefinition tool) {
+    final title = tool.titleIn(context);
+    if (context.appLocale != AppLocale.en) return title;
+    return _railShortLabelsEnglish[tool.id] ?? title;
+  }
+
+  static const Map<String, String> _railShortLabelsEnglish = <String, String>{
+    'photo-compose': 'Compose',
+    'images-to-pdf': 'To PDF',
+    'pdf-merge': 'Merge',
+    'pdf-split': 'Split',
+    'pdf-to-images': 'To images',
+    'image-resize': 'Resize',
+    'pdf-organise': 'Organise',
+    'watermark': 'Watermark',
   };
 }

@@ -14,43 +14,48 @@ import 'partials.dart';
 /// that mentions it in a card. Roadmap tools get a page too — an honest one
 /// that says the tool is not built yet.
 RenderedPage buildToolPage(SiteConfig config, ToolInfo tool) {
+  final locale = config.locale;
+  final strings = config.strings;
   final related = ToolCatalog.inCategory(
     tool.category,
   ).where((other) => other.id != tool.id).toList(growable: false);
 
   final meta = PageMeta(
     path: tool.path,
-    title: '${tool.title} — ${Brand.name}',
-    description: tool.metaDescription,
+    title: '${tool.titleIn(locale)} — ${Brand.name}',
+    description: tool.metaDescriptionIn(locale),
     priority: tool.status.isAvailable ? 0.9 : 0.4,
     breadcrumbs: [
-      const Crumb(name: 'Home', path: ''),
-      const Crumb(name: 'Tools', path: 'tools/'),
-      Crumb(name: tool.title, path: tool.path),
+      Crumb(name: strings.crumbHome, path: ''),
+      Crumb(name: strings.navTools, path: 'tools/'),
+      Crumb(name: tool.titleIn(locale), path: tool.path),
     ],
     structuredData: [
       StructuredData.tool(config, tool),
-      if (tool.faqs.isNotEmpty) StructuredData.faqPage(tool.faqs),
+      if (tool.faqs.isNotEmpty) StructuredData.faqPage(config, tool.faqs),
     ],
   );
 
   final body = lines([
     pageHead(
       config: config,
-      title: tool.title,
-      summary: tool.summary,
-      eyebrow: '${tool.category.label} · ${tool.status.label}',
-      crumbs: [(name: 'Home', path: ''), (name: 'Tools', path: 'tools/')],
+      title: tool.titleIn(locale),
+      summary: tool.summaryIn(locale),
+      eyebrow: '${tool.category.labelIn(locale)} · ${tool.status.labelIn(locale)}',
+      crumbs: [(name: strings.crumbHome, path: ''), (name: strings.navTools, path: 'tools/')],
     ),
     _overview(config, tool),
     if (tool.faqs.isNotEmpty)
-      faqSection(tool.faqs, heading: 'About ${_lowerFirst(tool.title)}', id: 'tool-faq'),
+      faqSection(
+        config,
+        tool.faqs,
+        heading: 'About ${_lowerFirst(tool.titleIn(locale))}',
+        id: 'tool-faq',
+      ),
     if (related.isNotEmpty) _related(config, related),
     openAppBanner(
       config,
-      note: tool.status.isAvailable
-          ? 'This tool is ready. It opens in the tab you are already looking at.'
-          : 'This one is not built yet — the app has the finished tools in it.',
+      note: tool.status.isAvailable ? strings.toolReadyNote : strings.toolNotReadyNote,
     ),
   ]);
 
@@ -61,6 +66,8 @@ RenderedPage buildToolPage(SiteConfig config, ToolInfo tool) {
 }
 
 String _overview(SiteConfig config, ToolInfo tool) {
+  final locale = config.locale;
+  final strings = config.strings;
   final illustration = tool.status.isAvailable
       ? Illustrations.heroSheet()
       : Illustrations.valueProp('packing');
@@ -70,11 +77,11 @@ String _overview(SiteConfig config, ToolInfo tool) {
   <div class="wrap tool-detail">
     <div class="tool-detail__text">
 ${tool.overview.map((paragraph) => '      <p>${escapeHtml(paragraph)}</p>').join('\n')}
-      <h2>What it does</h2>
+      <h2>${escapeHtml(strings.whatItDoes)}</h2>
       <ul class="ticks">
-${tool.highlights.map((highlight) => '        <li>${escapeHtml(highlight)}</li>').join('\n')}
+${tool.highlightsIn(locale).map((highlight) => '        <li>${escapeHtml(highlight)}</li>').join('\n')}
       </ul>
-${tool.status.isAvailable ? _availableActions(config) : _roadmapNote()}
+${tool.status.isAvailable ? _availableActions(config) : _roadmapNote(config)}
     </div>
     <div class="tool-detail__art" data-reveal>
 ${indent(illustration, 3)}
@@ -83,28 +90,31 @@ ${indent(illustration, 3)}
 </section>''';
 }
 
-String _availableActions(SiteConfig config) =>
-    '''
+String _availableActions(SiteConfig config) {
+  final strings = config.strings;
+  return '''
       <p class="hero__actions">
-        <a class="button button--primary" href="${config.appUrl}">Open the app</a>
-        <a class="button button--ghost" href="${config.url('')}#how">See how it works</a>
+        <a class="button button--primary" href="${config.appUrl}">${escapeHtml(strings.navOpenApp)}</a>
+        <a class="button button--ghost" href="${config.url('')}#how">${escapeHtml(strings.seeHowItWorks)}</a>
       </p>''';
+}
 
-String _roadmapNote() =>
-    '''
+String _roadmapNote(SiteConfig config) {
+  final strings = config.strings;
+  return '''
       <div class="note">
-        <h2>Not built yet</h2>
-        <p>This tool is on the roadmap and has a page in the app describing what
-        it will do. If you need it, say so on the
-        <a href="${Brand.issuesUrl}" rel="noopener">issue tracker</a> — that is
-        how the order gets decided.</p>
+        <h2>${escapeHtml(strings.notBuiltYetHeading)}</h2>
+        <p>${escapeHtml(strings.notBuiltYetBodyBefore)}
+        <a href="${Brand.issuesUrl}" rel="noopener">${escapeHtml(strings.notBuiltYetBodyLinkText)}</a>
+        ${escapeHtml(strings.notBuiltYetBodyAfter)}</p>
       </div>''';
+}
 
 String _related(SiteConfig config, List<ToolInfo> related) =>
     '''
 <section class="section section--tint">
   <div class="wrap">
-    <h2 class="section__title">More in the same box</h2>
+    <h2 class="section__title">${escapeHtml(config.strings.moreInTheBox)}</h2>
     <div class="grid grid--cards">
 ${related.map((tool) => toolCard(config, tool)).join('\n')}
     </div>
