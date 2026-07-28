@@ -8,6 +8,7 @@ library;
 export 'src/assets.dart';
 export 'src/copy.dart';
 export 'src/html.dart';
+export 'src/i18n/site_strings.dart';
 export 'src/illustrations.dart';
 export 'src/layout.dart';
 export 'src/markdown.dart';

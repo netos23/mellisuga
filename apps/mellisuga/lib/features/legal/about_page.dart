@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:mellisuga_content/mellisuga_content.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_info.dart';
+import '../../core/localization/app_locale_context.dart';
 import '../../core/widgets/app_logo.dart';
 import '../../core/widgets/responsive.dart';
-import 'legal_content.dart';
+import '../../l10n/generated/app_localizations.dart';
 import 'legal_page.dart';
 
 /// About screen: what the app is, who made it, and every legal document.
@@ -13,7 +15,7 @@ class AboutPage extends StatelessWidget {
 
   static Route<void> route() => MaterialPageRoute(
     builder: (context) => Scaffold(
-      appBar: AppBar(title: const Text('About')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).aboutPageTitle)),
       body: const AboutPage(),
     ),
   );
@@ -21,6 +23,8 @@ class AboutPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final locale = context.appLocale;
 
     return SingleChildScrollView(
       child: ReadableWidth(
@@ -54,7 +58,10 @@ class AboutPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
-            Text(AppInfo.description, style: theme.textTheme.bodyLarge?.copyWith(height: 1.55)),
+            Text(
+              locale.brandDescriptionIn(),
+              style: theme.textTheme.bodyLarge?.copyWith(height: 1.55),
+            ),
             const SizedBox(height: 24),
             Card(
               child: Padding(
@@ -69,16 +76,14 @@ class AboutPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Nothing is uploaded',
+                            l10n.nothingUploadedTitle,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Every tool runs on your own device. The web version '
-                            'is a static site with no backend, so there is no '
-                            'server that could receive your files.',
+                            l10n.nothingUploadedBody,
                             style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
                           ),
                         ],
@@ -90,28 +95,26 @@ class AboutPage extends StatelessWidget {
             ),
             const SizedBox(height: 28),
             Text(
-              'Legal',
+              l10n.legalSectionTitle,
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             _LinkTile(
               icon: Icons.privacy_tip_outlined,
-              title: 'Privacy Policy',
+              title: l10n.menuPrivacyPolicy,
               subtitle: LegalContent.privacy.summary,
               onTap: () => Navigator.of(context).push(LegalPage.route(LegalContent.privacy)),
             ),
             _LinkTile(
               icon: Icons.gavel_rounded,
-              title: 'Terms of Use',
+              title: l10n.menuTermsOfUse,
               subtitle: LegalContent.terms.summary,
               onTap: () => Navigator.of(context).push(LegalPage.route(LegalContent.terms)),
             ),
             _LinkTile(
               icon: Icons.workspace_premium_outlined,
-              title: 'Open source licences',
-              subtitle:
-                  '${AppInfo.name} is under the ${AppInfo.licenseName}. '
-                  'Includes notices for every bundled package.',
+              title: l10n.menuOpenSourceLicences,
+              subtitle: l10n.licencesSubtitle(AppInfo.name, AppInfo.licenseName),
               onTap: () => showLicensePage(
                 context: context,
                 applicationName: AppInfo.name,
@@ -126,13 +129,13 @@ class AboutPage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'Project',
+              l10n.projectSectionTitle,
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             _LinkTile(
               icon: Icons.public_rounded,
-              title: 'Website',
+              title: l10n.websiteTile,
               subtitle: AppInfo.websiteUrl,
               external: true,
               onTap: () =>
@@ -140,7 +143,7 @@ class AboutPage extends StatelessWidget {
             ),
             _LinkTile(
               icon: Icons.code_rounded,
-              title: 'Source code',
+              title: l10n.sourceCodeTile,
               subtitle: AppInfo.repositoryUrl,
               external: true,
               onTap: () =>
@@ -148,8 +151,8 @@ class AboutPage extends StatelessWidget {
             ),
             _LinkTile(
               icon: Icons.bug_report_outlined,
-              title: 'Report a problem',
-              subtitle: 'Bugs, feature requests and questions',
+              title: l10n.reportProblemTile,
+              subtitle: l10n.reportProblemSubtitle,
               external: true,
               onTap: () =>
                   launchUrl(Uri.parse(AppInfo.issuesUrl), mode: LaunchMode.externalApplication),

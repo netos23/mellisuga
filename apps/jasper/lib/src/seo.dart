@@ -77,8 +77,8 @@ abstract final class StructuredData {
     '@type': 'WebSite',
     'name': Brand.name,
     'url': config.siteUrl,
-    'description': Brand.shortDescription,
-    'inLanguage': 'en',
+    'description': config.locale.brandShortDescriptionIn(),
+    'inLanguage': config.locale.code,
     'publisher': <String, Object?>{
       '@type': 'Person',
       'name': Brand.copyrightHolder,
@@ -96,7 +96,7 @@ abstract final class StructuredData {
     'applicationCategory': 'MultimediaApplication',
     'applicationSubCategory': 'Photo and PDF utilities',
     'operatingSystem': Brand.platforms.join(', '),
-    'description': Brand.shortDescription,
+    'description': config.locale.brandShortDescriptionIn(),
     'browserRequirements': 'Requires JavaScript. Runs entirely client-side.',
     'softwareHelp': config.canonical(ToolCatalog.flagship.path),
     'license': Brand.licenseUrl,
@@ -107,7 +107,9 @@ abstract final class StructuredData {
       'priceCurrency': 'USD',
       'availability': 'https://schema.org/InStock',
     },
-    'featureList': ToolCatalog.available.expand((tool) => tool.highlights).toList(growable: false),
+    'featureList': ToolCatalog.available
+        .expand((tool) => tool.highlightsIn(config.locale))
+        .toList(growable: false),
     'author': <String, Object?>{
       '@type': 'Person',
       'name': Brand.copyrightHolder,
@@ -120,31 +122,35 @@ abstract final class StructuredData {
   static Map<String, Object?> tool(SiteConfig config, ToolInfo tool) => <String, Object?>{
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    'name': '${tool.title} — ${Brand.name}',
+    'name': '${tool.titleIn(config.locale)} — ${Brand.name}',
     'url': config.canonical(tool.path),
     'applicationCategory': 'MultimediaApplication',
     'operatingSystem': Brand.platforms.join(', '),
-    'description': tool.metaDescription,
+    'description': tool.metaDescriptionIn(config.locale),
     'isAccessibleForFree': true,
     'offers': <String, Object?>{'@type': 'Offer', 'price': '0', 'priceCurrency': 'USD'},
-    'featureList': tool.highlights,
+    'featureList': tool.highlightsIn(config.locale),
     'keywords': tool.keywords.join(', '),
     'softwareVersion': tool.status.isAvailable ? 'released' : 'planned',
   };
 
-  static Map<String, Object?> faqPage(List<FaqEntry> entries) => <String, Object?>{
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    'mainEntity': entries
-        .map(
-          (entry) => <String, Object?>{
-            '@type': 'Question',
-            'name': entry.question,
-            'acceptedAnswer': <String, Object?>{'@type': 'Answer', 'text': entry.answer},
-          },
-        )
-        .toList(growable: false),
-  };
+  static Map<String, Object?> faqPage(SiteConfig config, List<FaqEntry> entries) =>
+      <String, Object?>{
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        'mainEntity': entries
+            .map(
+              (entry) => <String, Object?>{
+                '@type': 'Question',
+                'name': entry.questionIn(config.locale),
+                'acceptedAnswer': <String, Object?>{
+                  '@type': 'Answer',
+                  'text': entry.answerIn(config.locale),
+                },
+              },
+            )
+            .toList(growable: false),
+      };
 
   static Map<String, Object?>? breadcrumbs(SiteConfig config, List<Crumb> crumbs) {
     if (crumbs.isEmpty) return null;
@@ -178,27 +184,33 @@ abstract final class StructuredData {
   };
 }
 
+/// One page's entry in the sitemap: its metadata plus the canonical URL it
+/// actually resolved to. The URL is precomputed by the caller rather than
+/// derived from a single [SiteConfig] here, because a multilingual sitemap
+/// mixes pages built under several different locale prefixes.
+typedef SitemapEntry = ({String canonicalUrl, PageMeta meta});
+
 /// The sitemap, built from the pages that were actually generated rather than
 /// from a hand-kept list — a sitemap that promises a page nobody built is worse
 /// than no sitemap.
-String renderSitemap(SiteConfig config, List<PageMeta> pages) {
-  final stamp = _isoDate(config.buildDate);
-  final entries = pages
-      .where((page) => page.inSitemap && !page.noIndex)
+String renderSitemap(DateTime buildDate, List<SitemapEntry> entries) {
+  final stamp = _isoDate(buildDate);
+  final rows = entries
+      .where((entry) => entry.meta.inSitemap && !entry.meta.noIndex)
       .map(
-        (page) =>
+        (entry) =>
             '  <url>\n'
-            '    <loc>${config.canonical(page.path)}</loc>\n'
+            '    <loc>${entry.canonicalUrl}</loc>\n'
             '    <lastmod>$stamp</lastmod>\n'
-            '    <changefreq>${page.changeFrequency}</changefreq>\n'
-            '    <priority>${page.priority.toStringAsFixed(1)}</priority>\n'
+            '    <changefreq>${entry.meta.changeFrequency}</changefreq>\n'
+            '    <priority>${entry.meta.priority.toStringAsFixed(1)}</priority>\n'
             '  </url>',
       )
       .join('\n');
 
   return '<?xml version="1.0" encoding="UTF-8"?>\n'
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-      '$entries\n'
+      '$rows\n'
       '</urlset>\n';
 }
 

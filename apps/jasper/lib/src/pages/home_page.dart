@@ -11,31 +11,33 @@ import 'partials.dart';
 /// The home page: what the thing is, why it is different, what it can do, and
 /// a link to it — in that order, because that is the order a stranger needs.
 RenderedPage buildHomePage(SiteConfig config) {
+  final locale = config.locale;
+  final strings = config.strings;
   final faqs = <FaqEntry>[...Faqs.general, ...ToolCatalog.flagship.faqs];
 
   final meta = PageMeta(
     path: '',
     // Keyword first, brand last: nobody searches for the brand yet.
-    title: '${Copy.heroHeading} — ${Brand.name}',
-    description: Brand.shortDescription,
+    title: '${strings.heroHeading} — ${Brand.name}',
+    description: locale.brandShortDescriptionIn(),
     priority: 1,
     changeFrequency: 'weekly',
     structuredData: [
       StructuredData.website(config),
       StructuredData.softwareApplication(config),
-      StructuredData.faqPage(faqs),
+      StructuredData.faqPage(config, faqs),
     ],
   );
 
   final body = lines([
     _hero(config),
-    _valueProps(),
-    _how(),
+    _valueProps(config),
+    _how(config),
     _spotlight(config),
     _tools(config),
-    _sizes(),
+    _sizes(config),
     _platforms(config),
-    faqSection(faqs, heading: Copy.faqHeading),
+    faqSection(config, faqs, heading: strings.faqHeading),
     _closing(config),
   ]);
 
@@ -45,20 +47,21 @@ RenderedPage buildHomePage(SiteConfig config) {
   );
 }
 
-String _hero(SiteConfig config) =>
-    '''
+String _hero(SiteConfig config) {
+  final strings = config.strings;
+  return '''
 <section class="hero">
   <div class="wrap hero__inner">
     <div class="hero__text">
-      <p class="eyebrow">${escapeHtml(Brand.tagline)}</p>
-      <h1>${escapeHtml(Copy.heroHeading)}<span class="hero__heading-tail"> — without uploading them</span></h1>
-      <p class="lead">${escapeHtml(Copy.heroLead)}</p>
+      <p class="eyebrow">${escapeHtml(config.locale.brandTaglineIn())}</p>
+      <h1>${escapeHtml(strings.heroHeading)}<span class="hero__heading-tail">${escapeHtml(strings.heroTail)}</span></h1>
+      <p class="lead">${escapeHtml(strings.heroLead)}</p>
       <p class="hero__actions">
-        <a class="button button--primary" href="${config.appUrl}">${escapeHtml(Copy.primaryAction)}</a>
-        <a class="button button--ghost" href="#how">${escapeHtml(Copy.secondaryAction)}</a>
+        <a class="button button--primary" href="${config.appUrl}">${escapeHtml(strings.primaryAction)}</a>
+        <a class="button button--ghost" href="#how">${escapeHtml(strings.secondaryAction)}</a>
       </p>
       <ul class="chips">
-${Copy.heroChips.map((chip) => '        <li>${escapeHtml(chip)}</li>').join('\n')}
+${strings.heroChips.map((chip) => '        <li>${escapeHtml(chip)}</li>').join('\n')}
       </ul>
     </div>
     <div class="hero__art" data-reveal>
@@ -66,17 +69,20 @@ ${indent(Illustrations.heroSheet(), 3)}
     </div>
   </div>
 </section>''';
+}
 
-String _valueProps() =>
-    '''
+String _valueProps(SiteConfig config) {
+  final strings = config.strings;
+  return '''
 <section class="section section--tint" id="why">
   <div class="wrap">
-    <h2 class="section__title">Why it is different from the first search result</h2>
+    <h2 class="section__title">${escapeHtml(strings.whyDifferentHeading)}</h2>
     <div class="grid grid--three">
-${Copy.valueProps.map(_valueProp).join('\n')}
+${strings.valueProps.map(_valueProp).join('\n')}
     </div>
   </div>
 </section>''';
+}
 
 String _valueProp(ValueProp prop) =>
     '''
@@ -88,10 +94,12 @@ ${indent(Illustrations.valueProp(prop.illustration), 5)}
         <p>${escapeHtml(prop.body)}</p>
       </article>''';
 
-String _how() {
+String _how(SiteConfig config) {
+  final strings = config.strings;
   final steps = <String>[];
-  for (var index = 0; index < Copy.steps.length; index++) {
-    final step = Copy.steps[index];
+  final stepList = strings.steps;
+  for (var index = 0; index < stepList.length; index++) {
+    final step = stepList[index];
     steps.add('''
       <li class="step" data-reveal style="--delay: ${(index * 0.1).toStringAsFixed(1)}s">
         <div class="step__badge" aria-hidden="true">${index + 1}</div>
@@ -104,7 +112,7 @@ ${indent(Illustrations.step(index), 4)}
   return '''
 <section class="section" id="how">
   <div class="wrap">
-    <h2 class="section__title">Three steps, no sign-up</h2>
+    <h2 class="section__title">${escapeHtml(strings.howHeading)}</h2>
     <ol class="steps">
 ${steps.join('\n')}
     </ol>
@@ -113,21 +121,23 @@ ${steps.join('\n')}
 }
 
 String _spotlight(SiteConfig config) {
+  final locale = config.locale;
+  final strings = config.strings;
   final tool = ToolCatalog.flagship;
   return '''
 <section class="section section--tint" id="compose">
   <div class="wrap spotlight">
     <div class="spotlight__text">
-      <p class="eyebrow">${escapeHtml(tool.status.label)}</p>
-      <h2>${escapeHtml(tool.title)}</h2>
-      <p class="lead">${escapeHtml(tool.summary)}</p>
+      <p class="eyebrow">${escapeHtml(tool.status.labelIn(locale))}</p>
+      <h2>${escapeHtml(tool.titleIn(locale))}</h2>
+      <p class="lead">${escapeHtml(tool.summaryIn(locale))}</p>
 ${tool.overview.take(2).map((paragraph) => '      <p>${escapeHtml(paragraph)}</p>').join('\n')}
       <ul class="ticks">
-${tool.highlights.map((highlight) => '        <li>${escapeHtml(highlight)}</li>').join('\n')}
+${tool.highlightsIn(locale).map((highlight) => '        <li>${escapeHtml(highlight)}</li>').join('\n')}
       </ul>
       <p class="hero__actions">
-        <a class="button button--primary" href="${config.appUrl}">Open it now</a>
-        <a class="button button--ghost" href="${config.url(tool.path)}">Read the details</a>
+        <a class="button button--primary" href="${config.appUrl}">${escapeHtml(strings.openItNow)}</a>
+        <a class="button button--ghost" href="${config.url(tool.path)}">${escapeHtml(strings.readDetails)}</a>
       </p>
     </div>
     <div class="spotlight__art" data-reveal>
@@ -138,13 +148,15 @@ ${indent(Illustrations.valueProp('packing'), 3)}
 }
 
 String _tools(SiteConfig config) {
+  final locale = config.locale;
+  final strings = config.strings;
   final sections = ToolCategory.values
       .map((category) {
         final tools = ToolCatalog.inCategory(category);
         return '''
     <div class="tool-group">
-      <h3 class="tool-group__title">${escapeHtml(category.label)}</h3>
-      <p class="tool-group__blurb">${escapeHtml(category.blurb)}</p>
+      <h3 class="tool-group__title">${escapeHtml(category.labelIn(locale))}</h3>
+      <p class="tool-group__blurb">${escapeHtml(category.blurbIn(locale))}</p>
       <div class="grid grid--cards">
 ${tools.map((tool) => toolCard(config, tool, level: 4)).join('\n')}
       </div>
@@ -155,14 +167,15 @@ ${tools.map((tool) => toolCard(config, tool, level: 4)).join('\n')}
   return '''
 <section class="section" id="tools">
   <div class="wrap">
-    <h2 class="section__title">${escapeHtml(Copy.toolsHeading)}</h2>
-    <p class="section__lead">${escapeHtml(Copy.toolsLead)}</p>
+    <h2 class="section__title">${escapeHtml(strings.toolsHeading)}</h2>
+    <p class="section__lead">${escapeHtml(strings.toolsLead)}</p>
 $sections
   </div>
 </section>''';
 }
 
-String _sizes() {
+String _sizes(SiteConfig config) {
+  final strings = config.strings;
   final paperRows = PaperFormats.grouped.entries
       .map(
         (entry) =>
@@ -188,14 +201,14 @@ String _sizes() {
   return '''
 <section class="section section--tint" id="sizes">
   <div class="wrap">
-    <h2 class="section__title">${escapeHtml(Copy.sizesHeading)}</h2>
-    <p class="section__lead">${escapeHtml(Copy.sizesLead)}</p>
+    <h2 class="section__title">${escapeHtml(strings.sizesHeading)}</h2>
+    <p class="section__lead">${escapeHtml(strings.sizesLead)}</p>
     <div class="grid grid--two">
       <div class="table-card" data-reveal>
-        <h3>Paper</h3>
+        <h3>${escapeHtml(strings.paperHeading)}</h3>
         <div class="table-scroll">
           <table>
-            <caption class="visually-hidden">Built-in paper formats, grouped by standard</caption>
+            <caption class="visually-hidden">${escapeHtml(strings.paperCaption)}</caption>
             <tbody>
 $paperRows
             </tbody>
@@ -203,10 +216,10 @@ $paperRows
         </div>
       </div>
       <div class="table-card" data-reveal>
-        <h3>Print sizes</h3>
+        <h3>${escapeHtml(strings.printSizesHeading)}</h3>
         <div class="table-scroll">
           <table>
-            <caption class="visually-hidden">Built-in print size presets, grouped by kind</caption>
+            <caption class="visually-hidden">${escapeHtml(strings.printSizesCaption)}</caption>
             <tbody>
 $printRows
             </tbody>
@@ -214,13 +227,14 @@ $printRows
         </div>
       </div>
     </div>
-    <p class="section__foot">${PaperFormats.all.length} paper formats and ${PhotoSizePresets.all.length} print presets are built in, in portrait or landscape — and any size you type in millimetres, centimetres or inches works just as well.</p>
+    <p class="section__foot">${escapeHtml(strings.sizesFoot(PaperFormats.all.length, PhotoSizePresets.all.length))}</p>
   </div>
 </section>''';
 }
 
 String _platforms(SiteConfig config) {
-  final rows = Copy.platforms
+  final strings = config.strings;
+  final rows = strings.platforms
       .map(
         (platform) =>
             '''
@@ -228,7 +242,7 @@ String _platforms(SiteConfig config) {
         <h3>${escapeHtml(platform.name)}</h3>
         <p>${escapeHtml(platform.detail)}</p>
         <a href="${platform.isWeb ? config.appUrl : '${Brand.repositoryUrl}/releases'}"${platform.isWeb ? '' : ' rel="noopener"'}>
-          ${platform.isWeb ? 'Open in this browser' : 'Download'}
+          ${platform.isWeb ? escapeHtml(strings.openInBrowser) : escapeHtml(strings.download)}
         </a>
       </li>''',
       )
@@ -237,8 +251,8 @@ String _platforms(SiteConfig config) {
   return '''
 <section class="section" id="platforms">
   <div class="wrap">
-    <h2 class="section__title">${escapeHtml(Copy.platformsHeading)}</h2>
-    <p class="section__lead">${escapeHtml(Copy.platformsLead)}</p>
+    <h2 class="section__title">${escapeHtml(strings.platformsHeading)}</h2>
+    <p class="section__lead">${escapeHtml(strings.platformsLead)}</p>
     <ul class="platforms">
 $rows
     </ul>
@@ -246,16 +260,17 @@ $rows
 </section>''';
 }
 
-String _closing(SiteConfig config) =>
-    '''
+String _closing(SiteConfig config) {
+  final strings = config.strings;
+  return '''
 <section class="section closing">
   <div class="wrap closing__inner">
     <div>
-      <h2>${escapeHtml(Copy.closingHeading)}</h2>
-      <p class="lead">${escapeHtml(Copy.closingBody)}</p>
+      <h2>${escapeHtml(strings.closingHeading)}</h2>
+      <p class="lead">${escapeHtml(strings.closingBody)}</p>
       <p class="hero__actions">
-        <a class="button button--primary" href="${config.appUrl}">${escapeHtml(Copy.primaryAction)}</a>
-        <a class="button button--ghost" href="${Brand.repositoryUrl}" rel="noopener">Read the source</a>
+        <a class="button button--primary" href="${config.appUrl}">${escapeHtml(strings.primaryAction)}</a>
+        <a class="button button--ghost" href="${Brand.repositoryUrl}" rel="noopener">${escapeHtml(strings.readSource)}</a>
       </p>
     </div>
     <div class="closing__art" aria-hidden="true">
@@ -263,3 +278,4 @@ ${indent(Illustrations.mark(id: 'closing-bird'), 3)}
     </div>
   </div>
 </section>''';
+}

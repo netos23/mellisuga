@@ -51,6 +51,33 @@ The app renders that with widgets; the site renders it as HTML. Neither owns it,
 so the privacy policy on the website and the privacy policy in the app cannot
 say different things, and a tool added to the catalogue appears in both.
 
+## Localization
+
+Both surfaces support English, French, German, Spanish, Russian, Arabic,
+Japanese and Chinese. `AppLocale` in `mellisuga_content` is the one list every
+surface agrees on:
+
+- The app uses Flutter's standard `gen-l10n` — ARB files under
+  `apps/mellisuga/lib/l10n/`, one per language, with `app_en.arb` as the
+  template every other file is checked against. It follows the system
+  language by default; a picker under the "⋮" menu or About overrides it,
+  persisted on-device.
+- The landing site builds every language's pages at once
+  (`buildAllLocales` in `apps/jasper/lib/src/site.dart`): English stays at the
+  site root for backward-compatible URLs, and every other language gets its
+  own path prefix (`/fr/`, `/de/`, …), with `hreflang` alternates linking
+  them together.
+- Navigation, headings, tool names and summaries are translated; each tool's
+  long-form overview, its own FAQ, and the legal documents stay in English for
+  now, to avoid an unreviewed machine translation drifting from — or
+  misstating — the source text on anything with legal weight. Non-English
+  legal pages say so and link back to the English original.
+
+Translations were produced without a professional review pass; corrections
+are welcome as ordinary pull requests against the ARB files and the
+`*_i18n.dart` files in `packages/mellisuga_content/lib/src/i18n/` and
+`apps/jasper/lib/src/i18n/`.
+
 ## Working on it
 
 ```bash
