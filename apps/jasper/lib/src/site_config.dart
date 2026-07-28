@@ -1,5 +1,7 @@
 import 'package:mellisuga_content/mellisuga_content.dart';
 
+import 'i18n/site_strings.dart';
+
 /// Where the generated site will live, and therefore how its links are written.
 ///
 /// GitHub Pages serves project sites from a subpath (`/mellisuga/`), so nothing
@@ -12,6 +14,7 @@ class SiteConfig {
     String siteUrl = Brand.websiteUrl,
     String appPath = '${Brand.appPathSegment}/',
     DateTime? buildDate,
+    this.locale = AppLocale.en,
   }) : baseHref = _withSlashes(baseHref),
        siteUrl = _withTrailingSlash(siteUrl),
        appPath = _withTrailingSlash(appPath),
@@ -33,17 +36,48 @@ class SiteConfig {
   /// Stamped into the sitemap. Injectable so a test can assert on a fixed date.
   final DateTime buildDate;
 
-  /// An internal link to [relative], which must not start with a slash.
-  String url(String relative) => '$baseHref$relative';
+  /// The language this build's pages are rendered in.
+  final AppLocale locale;
 
-  /// The absolute URL of [relative], for canonicals and structured data.
-  String canonical(String relative) => '$siteUrl$relative';
+  /// Every page's translated chrome text, for [locale].
+  SiteStrings get strings => SiteStrings.forLocale(locale);
 
-  /// Link to the web build of the app.
-  String get appUrl => url(appPath);
+  /// English stays at the site root, for backward-compatible URLs and because
+  /// it is the language search engines have already indexed. Every other
+  /// locale gets its own path prefix.
+  String get localePrefix => locale.isFallback ? '' : '${locale.code}/';
+
+  /// A copy of this config rendering a different [locale]'s pages.
+  SiteConfig withLocale(AppLocale locale) => SiteConfig(
+    baseHref: baseHref,
+    siteUrl: siteUrl,
+    appPath: appPath,
+    buildDate: buildDate,
+    locale: locale,
+  );
+
+  /// An internal link to a page at [relative], which must not start with a
+  /// slash. Carries the current locale's path prefix.
+  String url(String relative) => '$baseHref$localePrefix$relative';
+
+  /// The absolute URL of a page at [relative], for canonicals and structured
+  /// data. Carries the current locale's path prefix.
+  String canonical(String relative) => '$siteUrl$localePrefix$relative';
+
+  /// A link to a same-origin file shared by every locale — the stylesheet,
+  /// the script and the icon — which live at the site root, never under a
+  /// locale prefix.
+  String asset(String relative) => '$baseHref$relative';
+
+  /// The absolute URL of a shared asset.
+  String assetCanonical(String relative) => '$siteUrl$relative';
+
+  /// Link to the web build of the app. The app is a single build with its own
+  /// in-app language switcher, so it is never locale-prefixed.
+  String get appUrl => asset(appPath);
 
   /// Absolute URL of the app, for structured data.
-  String get appCanonical => canonical(appPath);
+  String get appCanonical => assetCanonical(appPath);
 
   static String _withTrailingSlash(String value) => value.endsWith('/') ? value : '$value/';
 

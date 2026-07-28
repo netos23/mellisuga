@@ -11,30 +11,38 @@ import '../site_config.dart';
 /// [level] keeps the heading outline honest: the card sits under a category
 /// heading on the home page and directly under a section heading elsewhere.
 String toolCard(SiteConfig config, ToolInfo tool, {int level = 3}) {
+  final locale = config.locale;
+  final statusLabel = tool.status.labelIn(locale);
   final status = tool.status.isAvailable
-      ? '<span class="badge badge--live">${escapeHtml(tool.status.label)}</span>'
-      : '<span class="badge">${escapeHtml(tool.status.label)}</span>';
+      ? '<span class="badge badge--live">${escapeHtml(statusLabel)}</span>'
+      : '<span class="badge">${escapeHtml(statusLabel)}</span>';
 
   return '''
         <article class="card card--tool" data-reveal>
           <div class="card__head">
-            <h$level class="card__title"><a href="${config.url(tool.path)}">${escapeHtml(tool.title)}</a></h$level>
+            <h$level class="card__title"><a href="${config.url(tool.path)}">${escapeHtml(tool.titleIn(locale))}</a></h$level>
             $status
           </div>
-          <p>${escapeHtml(tool.summary)}</p>
+          <p>${escapeHtml(tool.summaryIn(locale))}</p>
         </article>''';
 }
 
 /// The FAQ accordion. `<details>` does the work, so it opens with JavaScript
 /// switched off and search engines can read every answer.
-String faqSection(List<FaqEntry> entries, {required String heading, String id = 'faq'}) {
+String faqSection(
+  SiteConfig config,
+  List<FaqEntry> entries, {
+  required String heading,
+  String id = 'faq',
+}) {
+  final locale = config.locale;
   final items = entries
       .map(
         (entry) =>
             '''
       <details class="faq__item">
-        <summary>${escapeHtml(entry.question)}</summary>
-        <p>${escapeHtml(entry.answer)}</p>
+        <summary>${escapeHtml(entry.questionIn(locale))}</summary>
+        <p>${escapeHtml(entry.answerIn(locale))}</p>
       </details>''',
       )
       .join('\n');
@@ -84,7 +92,7 @@ String openAppBanner(SiteConfig config, {String? note}) =>
     '''
 <section class="section banner">
   <div class="wrap banner__inner">
-    <p class="banner__text">${escapeHtml(note ?? 'Everything here runs in your browser. Nothing is uploaded.')}</p>
-    <a class="button button--primary" href="${config.appUrl}">Open the app</a>
+    <p class="banner__text">${escapeHtml(note ?? config.strings.bannerDefaultNote)}</p>
+    <a class="button button--primary" href="${config.appUrl}">${escapeHtml(config.strings.navOpenApp)}</a>
   </div>
 </section>''';

@@ -1,8 +1,11 @@
 import 'dart:io';
 
-import 'package:jasper/jasper.dart';
+import 'package:mellisuga_content/mellisuga_content.dart';
+// The site's own `Platform` (a row in the "where it runs" table, from
+// `copy.dart`) would otherwise shadow `dart:io`'s.
+import 'package:jasper/jasper.dart' hide Platform;
 
-/// Builds the landing site.
+/// Builds the landing site, in every supported language.
 ///
 /// ```
 /// dart run bin/build.dart --out build/site \
@@ -25,7 +28,7 @@ Future<int> run(List<String> arguments) async {
     buildDate: options.buildDate,
   );
 
-  final site = buildSite(config);
+  final site = buildAllLocales(config);
   final directory = Directory(options.output);
   await writeSite(site, directory);
 
@@ -34,6 +37,7 @@ Future<int> run(List<String> arguments) async {
     ..writeln('  base href  ${config.baseHref}')
     ..writeln('  site URL   ${config.siteUrl}')
     ..writeln('  app URL    ${config.appUrl}')
+    ..writeln('  languages  ${AppLocale.values.map((locale) => locale.code).join(', ')}')
     ..writeln('  pages      ${site.pages.length}')
     ..writeln('  size       ${(site.byteCount / 1024).toStringAsFixed(1)} KiB');
 

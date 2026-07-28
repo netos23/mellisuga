@@ -30,6 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: 0.20.2
 
   # Product copy, legal documents, the tool catalogue, print formats and the
   # brand geometry — everything the landing site also has to know. Kept in the
@@ -69,6 +72,10 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   uses-material-design: true
+
+  # Runs gen-l10n from l10n.yaml before every build/analyze/test, turning
+  # lib/l10n/app_en.arb and its siblings into lib/l10n/generated/.
+  generate: true
 
   assets:
     - assets/fonts/Roboto_LICENSE.txt

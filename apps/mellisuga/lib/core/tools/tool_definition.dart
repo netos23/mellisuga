@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mellisuga_content/mellisuga_content.dart';
 
+import '../localization/app_locale_context.dart';
+
 export 'package:mellisuga_content/mellisuga_content.dart' show ToolCategory, ToolInfo, ToolStatus;
 
 /// The icon each category is drawn with.
@@ -58,4 +60,15 @@ class ToolDefinition {
 
   /// Whether this tool matches a free-text [query].
   bool matches(String query) => info.matches(query);
+}
+
+/// Translated renderings of a tool's title, summary and highlights, read
+/// through [BuildContext] so call sites do not have to look up the current
+/// locale themselves.
+extension ToolDefinitionLocalization on ToolDefinition {
+  String titleIn(BuildContext context) => info.titleIn(context.appLocale);
+
+  String summaryIn(BuildContext context) => info.summaryIn(context.appLocale);
+
+  List<String> highlightsIn(BuildContext context) => info.highlightsIn(context.appLocale);
 }

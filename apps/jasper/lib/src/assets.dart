@@ -692,6 +692,45 @@ thead th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; le
   .js [data-reveal] { opacity: 1; }
 }
 
+/* Language switcher -------------------------------------------------------- */
+
+.lang-switch { position: relative; font-size: 0.95rem; }
+.lang-switch summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--muted);
+  font-weight: 600;
+}
+.lang-switch summary::-webkit-details-marker { display: none; }
+.lang-switch summary::after { content: " ▾"; font-size: 0.7em; }
+.lang-switch ul {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0.4rem;
+  position: absolute;
+  right: 0;
+  min-width: 9rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  z-index: 20;
+}
+.lang-switch li { margin: 0; }
+.lang-switch a {
+  display: block;
+  padding: 0.4rem 0.6rem !important;
+  border-top: 0 !important;
+  border-radius: 6px;
+  font-size: 0.95rem !important;
+}
+.lang-switch a:hover { background: var(--surface-2); }
+.lang-switch a[aria-current] { color: var(--brand-strong); font-weight: 700; }
+@media (max-width: 56rem) {
+  .lang-switch { order: 5; }
+  .lang-switch ul { position: static; box-shadow: none; border: 0; padding-left: 0.5rem; }
+}
+
 /* Print ------------------------------------------------------------------- */
 
 @media print {

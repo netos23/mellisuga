@@ -10,11 +10,14 @@ import '../site_config.dart';
 ///
 /// GitHub Pages serves the site root's `404.html` for anything it cannot find,
 /// including paths under the app, so this page has to offer both ways out.
+/// It only ever exists in English — see [buildAllLocales] — since GitHub
+/// Pages has no way to serve a different one per locale prefix anyway.
 RenderedPage buildNotFoundPage(SiteConfig config) {
+  final strings = config.strings;
   final meta = PageMeta(
     path: '',
     fileName: '404.html',
-    title: 'Page not found — ${Brand.name}',
+    title: '${strings.notFoundHeading} — ${Brand.name}',
     description: 'That page does not exist. The tools are all still here.',
     inSitemap: false,
     noIndex: true,
@@ -27,16 +30,15 @@ RenderedPage buildNotFoundPage(SiteConfig config) {
     <div class="not-found__art" aria-hidden="true">
 ${indent(Illustrations.mark(id: 'lost-bird'), 3)}
     </div>
-    <h1>Nothing here</h1>
-    <p class="lead">The page you asked for does not exist — but nothing was
-    uploaded on the way, so no harm done.</p>
+    <h1>${escapeHtml(strings.notFoundHeading)}</h1>
+    <p class="lead">${escapeHtml(strings.notFoundLead)}</p>
     <p class="hero__actions">
-      <a class="button button--primary" href="${config.url('')}">Back to the start</a>
-      <a class="button button--ghost" href="${config.appUrl}">Open the app</a>
+      <a class="button button--primary" href="${config.url('')}">${escapeHtml(strings.notFoundBackToStart)}</a>
+      <a class="button button--ghost" href="${config.appUrl}">${escapeHtml(strings.navOpenApp)}</a>
     </p>
     <p class="not-found__links">
-      Or jump to
-      <a href="${config.url('tools/')}">the tools</a>,
+      ${escapeHtml(strings.notFoundOrJumpTo)}
+      <a href="${config.url('tools/')}">${escapeHtml(strings.notFoundTheTools)}</a>,
 ${LegalContent.documents.map((document) => '      <a href="${config.url(document.path)}">${escapeHtml(document.title.toLowerCase())}</a>').join(',\n')}.
     </p>
   </div>
