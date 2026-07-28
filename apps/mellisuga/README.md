@@ -135,6 +135,17 @@ a millisecond, so the preview can never lag behind the controls.
 raster exporter all read the same millimetre-space segments, so the cut lines
 you print are the cut lines you saw.
 
+**Export is planned before it runs, and sized to the target.** Both exporters
+start by collapsing every placement into the smallest set of distinct bitmaps —
+twenty copies of one passport photo are one bitmap, decoded, resampled and
+embedded once. Each photo is then reduced to the resolution its print actually
+needs before anything else happens to it, because carrying a 12 MP frame through
+crop, flip, rotate and resample to fill a 0.2 MP print costs ~50 MB of live
+bitmap and changes no output pixel. Small prints skip the export-time decode
+entirely and reuse the copy the import already made. Caches are byte-budgeted
+rather than unbounded. Together that is what keeps a fifteen-photo export inside
+the memory a phone browser is willing to give a tab.
+
 ### What comes from the shared package
 
 The tool catalogue, the legal documents, the paper formats, the print size

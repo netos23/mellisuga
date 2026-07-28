@@ -27,8 +27,11 @@ class ImportFailure {
 /// preview has to do exactly the same or the printed sheet would not match what
 /// the user arranged.
 abstract final class PhotoImporter {
-  /// Longest edge kept for the on-screen preview. Full resolution is only ever
-  /// touched at export time, straight from the original bytes.
+  /// Longest edge kept for the on-screen preview.
+  ///
+  /// This decode is not only for the screen: an export reuses it whenever it
+  /// already holds every pixel the print needs, and only goes back to the
+  /// original bytes for prints larger than it can serve.
   static const int previewMaxEdge = 1800;
 
   /// Files larger than this are rejected rather than risking an out-of-memory
@@ -79,6 +82,7 @@ abstract final class PhotoImporter {
       image: image,
       naturalWidth: decoded.naturalWidth,
       naturalHeight: decoded.naturalHeight,
+      sourceHasAlpha: decoded.hasAlpha,
       printSize: _defaultSizeFor(decoded.naturalWidth, decoded.naturalHeight),
     );
   }
@@ -124,6 +128,7 @@ class _DecodedPreview {
     required this.height,
     required this.naturalWidth,
     required this.naturalHeight,
+    required this.hasAlpha,
   });
 
   final Uint8List rgba;
@@ -131,6 +136,9 @@ class _DecodedPreview {
   final int height;
   final int naturalWidth;
   final int naturalHeight;
+
+  /// Whether the source image carried an alpha channel.
+  final bool hasAlpha;
 }
 
 /// Runs on a background isolate (or inline on web, which is single-threaded).
@@ -154,5 +162,6 @@ _DecodedPreview? _decodeForPreview(Uint8List bytes) {
     height: preview.height,
     naturalWidth: decoded.width,
     naturalHeight: decoded.height,
+    hasAlpha: decoded.numChannels >= 4,
   );
 }

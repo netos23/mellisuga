@@ -35,6 +35,7 @@ class PhotoItem {
     required this.naturalWidth,
     required this.naturalHeight,
     required this.printSize,
+    this.sourceHasAlpha = false,
     this.edits = const PhotoEdits(),
     this.copies = 1,
     this.fit = PhotoFit.cover,
@@ -59,6 +60,13 @@ class PhotoItem {
 
   /// Full-resolution pixel height of the original, after EXIF orientation.
   final int naturalHeight;
+
+  /// Whether the original carried an alpha channel.
+  ///
+  /// Flutter hands back premultiplied pixels, while the `image` package works in
+  /// straight alpha, so [image] is only interchangeable with a fresh decode when
+  /// there is no alpha to disagree about. Camera photos are always opaque.
+  final bool sourceHasAlpha;
 
   /// The physical size this photo should be printed at.
   final PhotoPrintSize printSize;
@@ -120,6 +128,7 @@ class PhotoItem {
       image: image,
       naturalWidth: naturalWidth,
       naturalHeight: naturalHeight,
+      sourceHasAlpha: sourceHasAlpha,
       printSize: printSize ?? this.printSize,
       edits: edits ?? this.edits,
       copies: copies ?? this.copies,

@@ -1,6 +1,6 @@
 import 'dart:math' as math;
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 
 import '../../../core/units/length.dart';
@@ -11,16 +11,25 @@ import '../models/layout_settings.dart';
 import '../models/photo_item.dart';
 import 'export_options.dart';
 import 'photo_raster_cache.dart';
+import 'render_plan.dart';
 
 /// Renders composed sheets to PNG or JPEG bitmaps, one file per page.
 ///
 /// Everything is computed in millimetres and converted to pixels exactly once,
 /// at the requested DPI, so a 300 DPI A4 sheet comes out at precisely
 /// 2480 × 3508 px.
+///
+/// Each page is composited from a plan rather than straight down the placement
+/// list, so a photo repeated across a sheet is decoded and resampled once and
+/// then stamped everywhere it appears.
 abstract final class RasterExporter {
-  /// Refuse to allocate a canvas beyond this many pixels per page. At 600 DPI
-  /// an A2 sheet is already ~190 MP, and browsers will simply die trying.
-  static const int maxPixelsPerPage = 220 * 1000 * 1000;
+  /// Refuse to allocate a canvas beyond this many pixels per page.
+  ///
+  /// At four bytes a pixel the browser ceiling is already a 160 MB allocation,
+  /// and a mobile tab does not survive much beyond that — for anything larger
+  /// the PDF path is the right answer. Native builds can be trusted with far
+  /// more: at 600 DPI an A2 sheet is ~190 MP.
+  static int get maxPixelsPerPage => kIsWeb ? 40 * 1000 * 1000 : 220 * 1000 * 1000;
 
   static Future<List<ExportedFile>> export({
     required LayoutResult layout,
@@ -35,8 +44,8 @@ abstract final class RasterExporter {
     final results = <ExportedFile>[];
 
     try {
-      final pageWidthPx = _pixelsFor(settings.pageWidthMm, options.dpi);
-      final pageHeightPx = _pixelsFor(settings.pageHeightMm, options.dpi);
+      final pageWidthPx = pixelsFor(settings.pageWidthMm, options.dpi);
+      final pageHeightPx = pixelsFor(settings.pageHeightMm, options.dpi);
 
       if (pageWidthPx * pageHeightPx > maxPixelsPerPage) {
         throw RasterExportTooLargeException(
@@ -51,30 +60,27 @@ abstract final class RasterExporter {
         final canvas = img.Image(width: pageWidthPx, height: pageHeightPx, numChannels: 4);
         img.fill(canvas, color: ImageProcessor.colorFromArgb(canvas, backgroundArgb));
 
-        for (final placed in page.photos) {
-          final item = itemsById[placed.itemId];
-          if (item == null) continue;
-
-          final effectiveEdits = placed.rotated
-              ? item.edits.copyWith(quarterTurns: item.edits.quarterTurns + 1)
-              : item.edits;
-
-          final widthPx = _pixelsFor(placed.widthMm, options.dpi);
-          final heightPx = _pixelsFor(placed.heightMm, options.dpi);
-
-          final rendered = cache.render(
-            item,
-            edits: effectiveEdits,
-            width: widthPx,
-            height: heightPx,
+        // Photos never overlap on a sheet, so compositing them grouped by source
+        // rather than in placement order changes nothing about the result — and
+        // it keeps one decode alive at a time instead of interleaving them.
+        final jobs = planRenderJobs(pages: [page], itemsById: itemsById, dpi: options.dpi);
+        for (final job in jobs) {
+          final rendered = await cache.render(
+            job.item,
+            edits: job.edits,
+            width: job.widthPx,
+            height: job.heightPx,
           );
 
-          img.compositeImage(
-            canvas,
-            rendered,
-            dstX: _pixelsFor(placed.xMm, options.dpi, minimum: 0),
-            dstY: _pixelsFor(placed.yMm, options.dpi, minimum: 0),
-          );
+          for (final placed in job.placements) {
+            img.compositeImage(
+              canvas,
+              rendered,
+              dstX: pixelsFor(placed.xMm, options.dpi, minimum: 0),
+              dstY: pixelsFor(placed.yMm, options.dpi, minimum: 0),
+            );
+          }
+          await breathe();
         }
 
         _drawGuides(canvas, page, settings, options.dpi);
@@ -83,7 +89,7 @@ abstract final class RasterExporter {
           (page.index + 0.5) / pageCount,
           'Encoding page ${page.index + 1} of $pageCount',
         );
-        await Future<void>.delayed(Duration.zero);
+        await breathe();
 
         final bytes = switch (options.format) {
           RasterFormat.png => Uint8List.fromList(img.encodePng(canvas)),
@@ -105,7 +111,7 @@ abstract final class RasterExporter {
         );
 
         onProgress?.call((page.index + 1) / pageCount, 'Page ${page.index + 1} ready');
-        await Future<void>.delayed(Duration.zero);
+        await breathe();
       }
 
       return results;
@@ -134,11 +140,6 @@ abstract final class RasterExporter {
         antialias: true,
       );
     }
-  }
-
-  static int _pixelsFor(double millimeters, int dpi, {int minimum = 1}) {
-    final pixels = millimeters.mmToPixels(dpi.toDouble()).round();
-    return pixels < minimum ? minimum : pixels;
   }
 }
 

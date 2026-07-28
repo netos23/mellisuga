@@ -11,12 +11,22 @@ import '../models/layout_settings.dart';
 import '../models/photo_item.dart';
 import 'export_options.dart';
 import 'photo_raster_cache.dart';
+import 'render_plan.dart';
 
 /// Writes a composed sheet set to a print-ready PDF.
 ///
 /// Photos are embedded as JPEGs sized to their exact printed dimensions, and
 /// cutting guides are drawn as real vector strokes rather than baked pixels —
 /// so guides stay crisp at any zoom and the file stays small.
+///
+/// The work is planned before a single pixel is touched. Placements that would
+/// produce identical pixels — the twenty copies of one passport photo filling a
+/// sheet, the same photo repeated across three pages — share one
+/// [pw.MemoryImage], so the photo is decoded, resampled and encoded once and
+/// stored in the document once. Rendering then walks that plan photo by photo
+/// and releases each decoded source before opening the next, holding roughly one
+/// photo in memory instead of the whole set. On a phone browser that is the
+/// difference between a fifteen-photo export finishing and the tab being killed.
 abstract final class PdfExporter {
   static Future<ExportedFile> export({
     required LayoutResult layout,
@@ -41,9 +51,30 @@ abstract final class PdfExporter {
       final pageHeightPt = settings.pageHeightMm.mmToPdfPoints;
       final background = _toPdfColor(settings.backgroundColor);
 
-      final totalPhotos = layout.placedCount;
-      var processed = 0;
+      final jobs = planRenderJobs(pages: layout.pages, itemsById: itemsById, dpi: options.dpi);
 
+      final images = <String, pw.MemoryImage>{};
+      for (var index = 0; index < jobs.length; index++) {
+        final job = jobs[index];
+        final jpeg = await cache.encodedJpeg(
+          job.item,
+          edits: job.edits,
+          width: job.widthPx,
+          height: job.heightPx,
+          quality: options.jpegQuality,
+        );
+        images[job.key] = pw.MemoryImage(jpeg);
+        if (job.lastOfSource) cache.releaseSource(job.item.id);
+
+        onProgress?.call(
+          (index + 1) / jobs.length * 0.85,
+          'Rendering photo ${index + 1} of ${jobs.length}',
+        );
+        // Hand the frame back so the progress indicator can actually paint.
+        await breathe();
+      }
+
+      final pageCount = layout.pages.length;
       for (final page in layout.pages) {
         final children = <pw.Widget>[
           pw.Positioned(
@@ -57,42 +88,27 @@ abstract final class PdfExporter {
           final item = itemsById[placed.itemId];
           if (item == null) continue;
 
-          // Folding the layout's 90° turn into the photo's own quarter turns
-          // is exact: rotations compose, and flips are applied before both.
-          final effectiveEdits = placed.rotated
-              ? item.edits.copyWith(quarterTurns: item.edits.quarterTurns + 1)
-              : item.edits;
-
-          final widthPx = _pixelsFor(placed.widthMm, options.dpi);
-          final heightPx = _pixelsFor(placed.heightMm, options.dpi);
-
-          final jpeg = cache.encodedJpeg(
-            item,
-            edits: effectiveEdits,
-            width: widthPx,
-            height: heightPx,
-            quality: options.jpegQuality,
-          );
+          final image =
+              images[renderJobKey(
+                item,
+                effectiveEditsFor(item, placed),
+                pixelsFor(placed.widthMm, options.dpi),
+                pixelsFor(placed.heightMm, options.dpi),
+              )];
+          if (image == null) continue;
 
           children.add(
             pw.Positioned(
               left: placed.xMm.mmToPdfPoints,
               top: placed.yMm.mmToPdfPoints,
               child: pw.Image(
-                pw.MemoryImage(jpeg),
+                image,
                 width: placed.widthMm.mmToPdfPoints,
                 height: placed.heightMm.mmToPdfPoints,
                 fit: pw.BoxFit.fill,
               ),
             ),
           );
-
-          processed++;
-          if (onProgress != null && totalPhotos > 0) {
-            onProgress(processed / totalPhotos * 0.9, 'Rendering photo $processed of $totalPhotos');
-          }
-          // Hand the frame back so the progress indicator can actually paint.
-          await Future<void>.delayed(Duration.zero);
         }
 
         final guides = DividerGeometry.buildDashed(page, settings);
@@ -120,9 +136,20 @@ abstract final class PdfExporter {
             build: (context) => pw.Stack(children: children),
           ),
         );
+
+        onProgress?.call(
+          0.85 + (page.index + 1) / pageCount * 0.1,
+          'Composing page ${page.index + 1} of $pageCount',
+        );
+        await breathe();
       }
 
+      // Nothing below needs a bitmap again, and writing the document is the
+      // other memory peak — meet it with the caches already empty.
+      cache.dispose();
+
       onProgress?.call(0.95, 'Writing PDF');
+      await breathe();
       final bytes = await document.save();
       onProgress?.call(1, 'Done');
 
@@ -157,11 +184,6 @@ abstract final class PdfExporter {
       );
     }
     canvas.strokePath();
-  }
-
-  static int _pixelsFor(double millimeters, int dpi) {
-    final pixels = millimeters.mmToPixels(dpi.toDouble()).round();
-    return pixels < 1 ? 1 : pixels;
   }
 
   static PdfColor _toPdfColor(ui.Color color) => PdfColor(color.r, color.g, color.b, color.a);
