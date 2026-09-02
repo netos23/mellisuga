@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:jasper/jasper.dart';
+import 'package:landing/landing.dart';
 import 'package:mellisuga_content/mellisuga_content.dart';
 
 /// Writes the repository's legal Markdown from the shared content package.
@@ -21,7 +21,7 @@ Future<void> main(List<String> arguments) async {
     switch (arguments[index]) {
       case '--out':
         if (index + 1 >= arguments.length) {
-          stderr.writeln('jasper: --out needs a directory');
+          stderr.writeln('landing: --out needs a directory');
           exitCode = 64;
           return;
         }
@@ -30,7 +30,7 @@ Future<void> main(List<String> arguments) async {
       case '--check':
         check = true;
       default:
-        stderr.writeln('jasper: unknown option "${arguments[index]}"');
+        stderr.writeln('landing: unknown option "${arguments[index]}"');
         exitCode = 64;
         return;
     }

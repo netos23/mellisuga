@@ -9,7 +9,29 @@
 abstract final class Assets {
   static const String styles = _styles;
   static const String script = _script;
+
+  /// The one script that cannot wait for the deferred file: it runs inline in
+  /// the `<head>`, before the first paint.
+  static const String themeBootstrap = _themeBootstrap;
 }
+
+const String _themeBootstrap =
+    r'''// Applied before the first paint so a dark-theme visitor never sees a white
+// flash. Everything else the page does is progressive enhancement; this one
+// has to be inline.
+(function () {
+  // Marks the document as scripted, so the stylesheet only hides the
+  // reveal-on-scroll sections when something is there to reveal them.
+  document.documentElement.classList.add('js');
+  try {
+    var stored = localStorage.getItem('mellisuga-theme');
+    if (stored === 'light' || stored === 'dark') {
+      document.documentElement.dataset.theme = stored;
+    }
+  } catch (error) {
+    /* Storage disabled: the media query still gets it right. */
+  }
+})();''';
 
 const String _styles = r'''
 /* ---------------------------------------------------------------------------

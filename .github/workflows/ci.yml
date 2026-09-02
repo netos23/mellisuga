@@ -15,12 +15,12 @@ jobs:
   # The two pure-Dart packages need no Flutter SDK, so they get their own fast
   # job rather than waiting behind an app build.
   dart:
-    name: Shared content & landing generator
+    name: Shared content & landing site
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        package: [packages/mellisuga_content, apps/jasper]
+        package: [packages/mellisuga_content, apps/landing]
     defaults:
       run:
         working-directory: ${{ matrix.package }}
@@ -53,10 +53,10 @@ jobs:
           sdk: stable
 
       - name: Build at the subpath it is deployed to
-        working-directory: apps/jasper
+        working-directory: apps/landing
         run: |
           dart pub get
-          dart run bin/build.dart \
+          dart run --define=jaspr.flags.release=true bin/build.dart \
             --out build/site \
             --base-href "/${GITHUB_REPOSITORY#*/}/" \
             --site-url "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/"
@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: landing-site
-          path: apps/jasper/build/site
+          path: apps/landing/build/site
           retention-days: 7
 
   app:

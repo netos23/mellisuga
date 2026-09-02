@@ -4,7 +4,7 @@
 
 This is the Flutter application: one codebase shipping to the web, to desktop
 and to mobile. It is one of two things in this repository — the other is
-[Jasper](../jasper), the landing site that describes it. Both read their content
+[the landing site](../landing) that describes it. Both read their content
 from [`mellisuga_content`](../../packages/mellisuga_content).
 
 Every tool does its work on your own device: the web build is a static site, so

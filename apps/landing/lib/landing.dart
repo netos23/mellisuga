@@ -1,7 +1,8 @@
-/// Jasper: the static site generator behind the Mellisuga landing page.
+/// The Mellisuga landing page, as a Jaspr site.
 ///
 /// It renders the shared product content — the same `mellisuga_content` package
-/// the app compiles in — into plain HTML, CSS and SVG. There is no runtime, no
+/// the app compiles in — into plain HTML, CSS and SVG. Jaspr is the templating
+/// engine and runs at build time only: there is no runtime, no client-side
 /// framework and no third-party request in the output; the whole site is files.
 library;
 

@@ -1,3 +1,4 @@
+import 'package:jaspr/jaspr.dart';
 import 'package:mellisuga_content/mellisuga_content.dart';
 
 import 'site_config.dart';
@@ -57,10 +58,21 @@ class PageMeta {
   String get filePath => fileName ?? '${path}index.html';
 }
 
-/// A page that has been rendered: its metadata and its HTML.
+/// A page the site is going to contain: its metadata and the Jaspr component
+/// that renders it.
 ///
 /// Page builders return both so the sitemap can be assembled from what was
 /// actually generated instead of from a parallel list.
+class SitePage {
+  const SitePage({required this.meta, required this.component});
+
+  final PageMeta meta;
+
+  /// The whole document, `<html>` downwards. [buildSite] renders it.
+  final Component component;
+}
+
+/// A page that has been rendered: its metadata and its HTML.
 class RenderedPage {
   const RenderedPage({required this.meta, required this.html});
 

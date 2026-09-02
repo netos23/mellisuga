@@ -1,6 +1,6 @@
 # mellisuga_content
 
-Everything the Mellisuga app and the Jasper landing site have to agree on.
+Everything the Mellisuga app and the landing site have to agree on.
 
 This package is pure Dart — no Flutter — because the landing generator is a
 plain Dart program and could not import it otherwise. The app renders this
