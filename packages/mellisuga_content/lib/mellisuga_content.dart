@@ -1,4 +1,4 @@
-/// Everything the Mellisuga app and the Jasper landing site must agree on:
+/// Everything the Mellisuga app and the landing site must agree on:
 /// what the product is called, what each tool does, what the legal documents
 /// say, and what the hummingbird mark looks like.
 ///

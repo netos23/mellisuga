@@ -1,8 +1,12 @@
-import 'package:jasper/jasper.dart';
+import 'dart:convert';
+
+import 'package:landing/landing.dart';
 import 'package:mellisuga_content/mellisuga_content.dart';
 import 'package:test/test.dart';
 
 void main() {
+  initializeRenderer();
+
   group('SiteStrings completeness', () {
     test('every non-English locale defines every key English does', () {
       final english = SiteStrings.englishKeys;
@@ -45,7 +49,9 @@ void main() {
       siteUrl: 'https://netos23.github.io/mellisuga/',
       buildDate: DateTime.utc(2026, 7, 27),
     );
-    final site = buildAllLocales(config);
+    late Site site;
+
+    setUpAll(() async => site = await buildAllLocales(config));
 
     test('every locale gets every page, at its own prefix', () {
       for (final locale in AppLocale.values) {
@@ -124,7 +130,7 @@ void main() {
       for (final locale in AppLocale.values) {
         if (locale.isFallback) continue;
         final page = site.files['${locale.code}/privacy/index.html']!;
-        expect(page, contains(escapeHtml(LegalNotices.englishOnlyNotice(locale)!)));
+        expect(page, contains(_escaped(LegalNotices.englishOnlyNotice(locale)!)));
       }
     });
 
@@ -136,3 +142,6 @@ void main() {
     });
   });
 }
+
+/// The same escaping Jaspr applies to a text node.
+String _escaped(String value) => const HtmlEscape(HtmlEscapeMode.element).convert(value);

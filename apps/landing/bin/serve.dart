@@ -12,7 +12,7 @@ import 'dart:io';
 Future<void> main(List<String> arguments) async {
   final root = Directory(arguments.isEmpty ? 'build/site' : arguments.first);
   if (!root.existsSync()) {
-    stderr.writeln('jasper: ${root.path} does not exist — run bin/build.dart first');
+    stderr.writeln('landing: ${root.path} does not exist — run bin/build.dart first');
     exitCode = 66; // EX_NOINPUT
     return;
   }

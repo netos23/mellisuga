@@ -1,8 +1,8 @@
 /// A language the app and the landing site can be shown in.
 ///
 /// This is the one list every surface agrees on: the app's `l10n.yaml`
-/// generates a delegate per [code], Jasper prefixes a locale's pages with
-/// [code] (English stays at the site root), and both read [rtl] to flip
+/// generates a delegate per [code], the landing site prefixes a locale's pages
+/// with [code] (English stays at the site root), and both read [rtl] to flip
 /// text direction.
 enum AppLocale {
   en('en', 'English', rtl: false),

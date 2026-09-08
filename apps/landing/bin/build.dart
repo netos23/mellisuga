@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:mellisuga_content/mellisuga_content.dart';
 // The site's own `Platform` (a row in the "where it runs" table, from
 // `copy.dart`) would otherwise shadow `dart:io`'s.
-import 'package:jasper/jasper.dart' hide Platform;
+import 'package:landing/landing.dart' hide Platform;
 
 /// Builds the landing site, in every supported language.
 ///
@@ -28,7 +28,8 @@ Future<int> run(List<String> arguments) async {
     buildDate: options.buildDate,
   );
 
-  final site = buildAllLocales(config);
+  initializeRenderer();
+  final site = await buildAllLocales(config);
   final directory = Directory(options.output);
   await writeSite(site, directory);
 
@@ -49,7 +50,7 @@ Future<void> main(List<String> arguments) async {
     exitCode = await run(arguments);
   } on ArgumentError catch (error) {
     stderr
-      ..writeln('jasper: ${error.message}')
+      ..writeln('landing: ${error.message}')
       ..writeln()
       ..writeln(_usage);
     exitCode = 64; // EX_USAGE

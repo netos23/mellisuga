@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:jaspr/server.dart';
 import 'package:mellisuga_content/mellisuga_content.dart';
 
 import 'assets.dart';
@@ -29,7 +31,13 @@ class Site {
   int get byteCount => files.values.fold(0, (total, contents) => total + contents.length);
 }
 
-/// Renders one locale's pages.
+/// Prepares Jaspr's server-side renderer.
+///
+/// Call this once before [buildSite] or [buildAllLocales]. It is idempotent, so
+/// a test that builds several sites can call it from every `main`.
+void initializeRenderer() => Jaspr.initializeApp();
+
+/// Renders one locale's page definitions.
 ///
 /// Each page carries its own metadata, so the sitemap is assembled from the
 /// pages that were actually built rather than from a second list that has to be
@@ -37,21 +45,30 @@ class Site {
 /// being built as one of the non-default locales inside [buildAllLocales] —
 /// GitHub Pages only ever serves a single site-root `404.html`, so there is no
 /// use in building one under every locale prefix too.
-List<RenderedPage> _buildPages(SiteConfig config, {bool includeNotFoundPage = true}) =>
-    <RenderedPage>[
-      buildHomePage(config),
-      buildToolsIndexPage(config),
-      for (final tool in ToolCatalog.tools) buildToolPage(config, tool),
-      for (final document in LegalContent.documents) buildLegalPage(config, document),
-      if (includeNotFoundPage) buildNotFoundPage(config),
-    ];
+List<SitePage> _definePages(SiteConfig config, {bool includeNotFoundPage = true}) => <SitePage>[
+  buildHomePage(config),
+  buildToolsIndexPage(config),
+  for (final tool in ToolCatalog.tools) buildToolPage(config, tool),
+  for (final document in LegalContent.documents) buildLegalPage(config, document),
+  if (includeNotFoundPage) buildNotFoundPage(config),
+];
 
-/// Renders the site in a single locale — [config.locale], defaulting to
+/// Renders one page's component to the HTML that will be written to disk.
+///
+/// Jaspr's server renderer is the whole templating engine here: components go
+/// in, a complete document — doctype included — comes out. Nothing of Jaspr
+/// itself is in that output, because no component on this site is a client
+/// component.
+Future<RenderedPage> _render(SitePage page) async {
+  final response = await renderComponent(page.component);
+  return RenderedPage(meta: page.meta, html: utf8.decode(response.body));
+}
+
+/// Renders the site in a single locale — [SiteConfig.locale], defaulting to
 /// English — at the site root, exactly as if the other seven languages did
-/// not exist. This is what every pre-existing test builds against; multi-
-/// language builds go through [buildAllLocales] instead.
-Site buildSite(SiteConfig config) {
-  final pages = _buildPages(config);
+/// not exist. Multi-language builds go through [buildAllLocales] instead.
+Future<Site> buildSite(SiteConfig config) async {
+  final pages = <RenderedPage>[for (final page in _definePages(config)) await _render(page)];
 
   final files = <String, String>{
     for (final page in pages) page.meta.filePath: page.html,
@@ -79,8 +96,8 @@ Site buildSite(SiteConfig config) {
 ///
 /// [config]'s own `locale` field is ignored; it exists so callers can still
 /// pass the same [SiteConfig] they would give [buildSite].
-Site buildAllLocales(SiteConfig config) {
-  final english = buildSite(config.withLocale(AppLocale.en));
+Future<Site> buildAllLocales(SiteConfig config) async {
+  final english = await buildSite(config.withLocale(AppLocale.en));
 
   final pages = <RenderedPage>[...english.pages];
   final files = <String, String>{...english.files};
@@ -92,10 +109,11 @@ Site buildAllLocales(SiteConfig config) {
   for (final locale in AppLocale.values) {
     if (locale == AppLocale.en) continue;
     final localeConfig = config.withLocale(locale);
-    final localePages = _buildPages(localeConfig, includeNotFoundPage: false);
+    final definitions = _definePages(localeConfig, includeNotFoundPage: false);
 
-    pages.addAll(localePages);
-    for (final page in localePages) {
+    for (final definition in definitions) {
+      final page = await _render(definition);
+      pages.add(page);
       files['${localeConfig.localePrefix}${page.meta.filePath}'] = page.html;
       sitemapEntries.add((canonicalUrl: localeConfig.canonical(page.meta.path), meta: page.meta));
     }

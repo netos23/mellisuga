@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:jasper/jasper.dart';
+import 'package:landing/landing.dart';
 import 'package:mellisuga_content/mellisuga_content.dart';
 import 'package:test/test.dart';
 
@@ -20,8 +20,25 @@ List<String> linksIn(String html) => RegExp(
   r'(?:href|src)="([^"]*)"',
 ).allMatches(html).map((match) => match.group(1)!).toList(growable: false);
 
+/// Every `<link>` tag in [html], as a map of its attributes.
+///
+/// Jaspr decides the order attributes are written in, so nothing here may
+/// assume `rel` comes before `href`.
+List<Map<String, String>> linkTagsIn(String html) => RegExp(r'<link\b([^>]*)>')
+    .allMatches(html)
+    .map(
+      (tag) => <String, String>{
+        for (final attribute in RegExp(r'([a-z-]+)="([^"]*)"').allMatches(tag.group(1)!))
+          attribute.group(1)!: attribute.group(2)!,
+      },
+    )
+    .toList(growable: false);
+
 void main() {
-  final site = buildSite(config());
+  initializeRenderer();
+  late Site site;
+
+  setUpAll(() async => site = await buildSite(config()));
 
   group('files', () {
     test('the pages that must exist do', () {
@@ -62,7 +79,7 @@ void main() {
         expect(html, startsWith('<!DOCTYPE html>'));
         expect(html, contains('<html lang="en"'));
         expect(html, contains('</html>'));
-        expect(html, contains('<meta charset="utf-8">'));
+        expect(html, contains('<meta charset="utf-8"'));
         expect(html, contains('name="viewport"'));
       }
     });
@@ -84,12 +101,10 @@ void main() {
     test('has a canonical URL that matches where the file is written', () {
       for (final page in site.pages) {
         if (page.meta.noIndex) continue;
+        final canonical = linkTagsIn(page.html).singleWhere((tag) => tag['rel'] == 'canonical');
         expect(
-          page.html,
-          contains(
-            '<link rel="canonical" href="https://netos23.github.io/mellisuga/'
-            '${page.meta.path}">',
-          ),
+          canonical['href'],
+          'https://netos23.github.io/mellisuga/${page.meta.path}',
           reason: page.meta.filePath,
         );
       }
@@ -139,33 +154,57 @@ void main() {
         expect(html, isNot(contains('canvaskit')));
       }
     });
+
+    test('ships no client-side framework, Jaspr included', () {
+      for (final entry in site.files.entries) {
+        if (!entry.key.endsWith('.html')) continue;
+        // Jaspr's own hydration marker and client bootstrap. Neither may reach
+        // the output: every component here is rendered once, at build time.
+        expect(entry.value, isNot(contains('client.dart.js')), reason: entry.key);
+        expect(entry.value, isNot(contains(r'<!--$')), reason: entry.key);
+      }
+      // The only script the pages load is the site's own progressive
+      // enhancement file.
+      final scripts = RegExp(
+        r'<script[^>]*\ssrc="([^"]+)"',
+      ).allMatches(site.files['index.html']!).map((match) => match.group(1)!);
+      expect(scripts, ['/mellisuga/site.js']);
+    });
   });
 
   group('privacy promises the page itself has to keep', () {
     test('no page loads a resource from another origin', () {
       // Anchors to GitHub are fine — the promise is that nothing is *fetched*
       // from a third party while the page renders.
+      bool isRemote(String url) =>
+          url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//');
+
+      const fetching = {'stylesheet', 'icon', 'preload', 'apple-touch-icon'};
       final resources = <RegExp>[
         RegExp(r'<script[^>]*\ssrc="([^"]+)"'),
         RegExp(r'<img[^>]*\ssrc="([^"]+)"'),
-        // Only the tags that fetch something: a canonical URL is a claim about
-        // this page's address, not a request.
-        RegExp(
-          r'<link[^>]*\srel="(?:stylesheet|icon|preload|apple-touch-icon)"[^>]*\shref="([^"]+)"',
-        ),
       ];
 
       for (final entry in site.files.entries) {
         if (!entry.key.endsWith('.html')) continue;
         for (final pattern in resources) {
           for (final match in pattern.allMatches(entry.value)) {
-            final url = match.group(1)!;
             expect(
-              url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//'),
+              isRemote(match.group(1)!),
               isFalse,
-              reason: '${entry.key} loads $url from another origin',
+              reason: '${entry.key} loads ${match.group(1)} from another origin',
             );
           }
+        }
+        // Only the tags that fetch something: a canonical URL is a claim about
+        // this page's address, not a request.
+        for (final tag in linkTagsIn(entry.value)) {
+          if (!fetching.contains(tag['rel'])) continue;
+          expect(
+            isRemote(tag['href']!),
+            isFalse,
+            reason: '${entry.key} loads ${tag['href']} from another origin',
+          );
         }
       }
     });
@@ -362,30 +401,33 @@ void main() {
   });
 
   group('escaping', () {
-    test('turns the dangerous characters into entities', () {
-      expect(escapeHtml('<script>&"\'</script>'), '&lt;script&gt;&amp;&quot;&#39;&lt;/script&gt;');
-    });
-
-    test('leaves ordinary prose alone, punctuation and all', () {
-      expect(escapeHtml('10 × 15 cm — passport'), '10 × 15 cm — passport');
+    test('text from the content package is escaped where it lands', () {
+      // The shared package is written by hand rather than fetched from
+      // anywhere, but "the input is trusted" is exactly the assumption that
+      // ages badly — and an unescaped `&` would produce invalid HTML either
+      // way. Jaspr escapes every text node and attribute value it renders;
+      // this is the check that nothing on this site bypasses it.
+      final home = site.files['index.html']!;
+      expect(home, contains('Free &amp; open source'));
+      expect(home, isNot(contains('Free & open source')));
     });
 
     test('no raw script-closing tag can appear inside structured data', () {
-      final block = jsonLdScript(<String, Object?>{'name': '</script><img src=x>'});
-      expect(block, isNot(contains('</script><img')));
-      expect(block, contains(r'<'));
+      final json = encodeJsonLd(<String, Object?>{'name': '</script><img src=x>'});
+      expect(json, isNot(contains('</script><img')));
+      expect(json, contains(r'\u003C'));
     });
   });
 
   group('deployment shape', () {
-    test('a root build produces root-relative links', () {
-      final rootSite = buildSite(SiteConfig(siteUrl: 'https://example.com/'));
+    test('a root build produces root-relative links', () async {
+      final rootSite = await buildSite(SiteConfig(siteUrl: 'https://example.com/'));
       expect(rootSite.files['index.html'], contains('href="/styles.css"'));
       expect(rootSite.files['index.html'], contains('href="/app/"'));
-      expect(
-        rootSite.files['index.html'],
-        contains('<link rel="canonical" href="https://example.com/">'),
-      );
+      final canonical = linkTagsIn(
+        rootSite.files['index.html']!,
+      ).singleWhere((tag) => tag['rel'] == 'canonical');
+      expect(canonical['href'], 'https://example.com/');
     });
 
     test('a subpath build never emits a link that escapes the subpath', () {
@@ -404,4 +446,6 @@ void main() {
   });
 }
 
-String _escaped(String value) => escapeHtml(value);
+/// The same escaping Jaspr applies to a text node, so a test can look for a
+/// string from the content package in the rendered HTML.
+String _escaped(String value) => const HtmlEscape(HtmlEscapeMode.element).convert(value);

@@ -57,16 +57,16 @@ jobs:
           dart pub get
           dart test
 
-      - name: Test the landing generator
-        working-directory: apps/jasper
+      - name: Test the landing site
+        working-directory: apps/landing
         run: |
           dart pub get
           dart test
 
       - name: Build the landing site
-        working-directory: apps/jasper
+        working-directory: apps/landing
         run: |
-          dart run bin/build.dart \
+          dart run --define=jaspr.flags.release=true bin/build.dart \
             --out "$GITHUB_WORKSPACE/_site" \
             --base-href "${{ steps.urls.outputs.base_href }}" \
             --site-url "${{ steps.urls.outputs.site_url }}"

@@ -32,7 +32,11 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  intl: 0.20.2
+  # Only here because the code `gen-l10n` generates imports it; nothing in
+  # lib/ does. The version is left to `flutter_localizations`, which pins it
+  # to whatever the current SDK ships — an exact pin here goes stale the next
+  # time Flutter bumps it, and breaks `pub get` outright.
+  intl: any
 
   # Product copy, legal documents, the tool catalogue, print formats and the
   # brand geometry — everything the landing site also has to know. Kept in the

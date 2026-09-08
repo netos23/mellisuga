@@ -6,7 +6,7 @@ of them is available inside the application under
 dependency set at build time, and the same list is published on the website's
 **Open source licences** page.
 
-The landing site (`apps/jasper`) bundles nothing at all: its HTML, CSS,
+The landing site (`apps/landing`) bundles nothing at all: its HTML, CSS,
 JavaScript and illustrations are written by hand in this repository, and it
 loads no font, script or stylesheet from anybody else.
 

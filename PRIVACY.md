@@ -6,7 +6,7 @@
 
 <!--
   Generated from packages/mellisuga_content by
-  apps/jasper/bin/legal_markdown.dart. Edit the Dart source, not this file.
+  apps/landing/bin/legal_markdown.dart. Edit the Dart source, not this file.
 -->
 
 This is the same text the application shows under **About → Privacy Policy**,

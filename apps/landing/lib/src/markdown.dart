@@ -13,7 +13,7 @@ String renderLegalMarkdown(LegalDocument document) {
     '> ${document.summary}',
     '<!--\n'
         '  Generated from packages/mellisuga_content by\n'
-        '  apps/jasper/bin/legal_markdown.dart. Edit the Dart source, not this file.\n'
+        '  apps/landing/bin/legal_markdown.dart. Edit the Dart source, not this file.\n'
         '-->',
     _wrap(
       'This is the same text the application shows under '
